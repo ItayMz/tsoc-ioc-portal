@@ -1,6 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from pydantic import BaseModel
 
+from app.exporters.defender_excel import export_campaign_to_excel_bytes
+from app.models.campaign import Campaign, CampaignStatistics
 from app.models.ioc import ParsedIOC
 from app.services.parser import parse_bulk_text
 
@@ -43,6 +45,34 @@ def _build_campaign_metadata(campaign_name: str | None) -> tuple[str, str, str]:
 @router.post("/parse", response_model=ParseResponse)
 def parse_bulk_iocs(payload: ParseRequest) -> ParseResponse:
     indicators = parse_bulk_text(payload.raw_text)
+    campaign = build_campaign(payload, indicators)
+
+    return ParseResponse(
+        indicators=indicators,
+        total_count=campaign.statistics.total_count,
+        valid_count=campaign.statistics.valid_count,
+        invalid_count=campaign.statistics.invalid_count,
+        counts_by_type=campaign.statistics.counts_by_type,
+        title=campaign.title,
+        description=campaign.description,
+        recommended_actions=campaign.recommended_actions,
+    )
+
+
+@router.post("/export/excel")
+def export_campaign_excel(payload: ParseRequest) -> Response:
+    indicators = parse_bulk_text(payload.raw_text)
+    campaign = build_campaign(payload, indicators)
+    workbook_bytes = export_campaign_to_excel_bytes(campaign)
+
+    return Response(
+        content=workbook_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=defender_iocs.xlsx"},
+    )
+
+
+def build_campaign(payload: ParseRequest, indicators: list[ParsedIOC]) -> Campaign:
     valid_count = sum(1 for indicator in indicators if indicator.valid)
     counts_by_type: dict[str, int] = {}
 
@@ -53,13 +83,17 @@ def parse_bulk_iocs(payload: ParseRequest) -> ParseResponse:
 
     title, description, recommended_actions = _build_campaign_metadata(payload.campaign_name)
 
-    return ParseResponse(
-        indicators=indicators,
-        total_count=len(indicators),
-        valid_count=valid_count,
-        invalid_count=len(indicators) - valid_count,
-        counts_by_type=counts_by_type,
+    return Campaign(
+        campaign_name=payload.campaign_name,
+        source_email_text=payload.source_email_text,
         title=title,
         description=description,
         recommended_actions=recommended_actions,
+        indicators=indicators,
+        statistics=CampaignStatistics(
+            total_count=len(indicators),
+            valid_count=valid_count,
+            invalid_count=len(indicators) - valid_count,
+            counts_by_type=counts_by_type,
+        ),
     )
