@@ -91,3 +91,37 @@ def test_parse_endpoint_returns_correct_actions_for_hashes_and_urls():
         "BlockAndRemediate",
         "Block",
     ]
+
+
+def test_parse_endpoint_uses_campaign_name_for_metadata():
+    response = parse_bulk_iocs(
+        ParseRequest(raw_text="https://example.com", campaign_name="Lumma Stealer")
+    )
+
+    assert response.title == "Block Lumma Stealer Indicators"
+    assert response.description == "Indicators associated with the Lumma Stealer campaign."
+    assert response.recommended_actions == (
+        "Block the listed indicators and investigate any historical communication."
+    )
+
+
+def test_parse_endpoint_uses_generic_metadata_when_campaign_name_missing():
+    response = parse_bulk_iocs(ParseRequest(raw_text="https://example.com"))
+
+    assert response.title == "Block Malicious Indicators"
+    assert response.description == "Indicators associated with a reported malicious campaign."
+    assert response.recommended_actions == (
+        "Block the listed indicators and investigate any historical communication."
+    )
+
+
+def test_parse_endpoint_accepts_source_email_text_without_using_it():
+    response = parse_bulk_iocs(
+        ParseRequest(raw_text="https://example.com", source_email_text="hello from an email")
+    )
+
+    assert response.title == "Block Malicious Indicators"
+    assert response.description == "Indicators associated with a reported malicious campaign."
+    assert response.recommended_actions == (
+        "Block the listed indicators and investigate any historical communication."
+    )
