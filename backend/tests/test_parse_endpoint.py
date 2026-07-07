@@ -21,6 +21,11 @@ def test_parse_endpoint_returns_bulk_results():
         "IpAddress",
         "SenderEmailAddress",
     ]
+    assert response.counts_by_type == {
+        "Url": 1,
+        "IpAddress": 1,
+        "SenderEmailAddress": 1,
+    }
 
 
 def test_parse_endpoint_deduplicates_normalized_domains():
@@ -32,6 +37,7 @@ def test_parse_endpoint_deduplicates_normalized_domains():
     assert response.indicators[0].refanged_value == "evil.com"
     assert response.indicators[0].indicator_type is not None
     assert response.indicators[0].indicator_type is IndicatorType.DOMAIN_NAME
+    assert response.counts_by_type == {"DomainName": 1}
 
 
 def test_parse_bulk_text_extracts_iocs_from_free_text():
