@@ -1,146 +1,302 @@
 # TSOC IOC Portal
 
-## Current Status
+> A full-stack SOC automation platform that transforms raw threat intelligence into Microsoft Defender IOC imports and ready-to-run Advanced Hunting KQL queries.
 
-Version: v1.0.0-rc1
+![Demo](docs/demo.gif)
 
-## Project Description
+---
 
-TSOC IOC Portal is now a full-stack IOC workflow application with a React frontend and a FastAPI backend. The frontend is a thin client that sends IOC payloads to the backend API. The backend remains the source of truth for parsing, validation, refang, normalization, deduplication, KQL generation, summary generation, and Defender export data.
+# The Problem
 
-## What this project demonstrates
+SOC analysts regularly receive Indicators of Compromise (IOCs) from customers, vendors, or threat intelligence feeds in inconsistent formats.
 
-- SOC workflow understanding
-- API-driven IOC normalization and classification
-- Microsoft Defender CSV formatting
-- Defender Advanced Hunting KQL generation
-- Backend validation and error handling
-- Modern frontend dashboard composition with reusable components
-- Automated regression coverage for backend parsing and export logic
+Before these indicators can be imported into Microsoft Defender or used for threat hunting, they often require repetitive manual work:
 
-## Features
+- Cleaning and normalizing IOC data
+- Removing duplicates
+- Identifying IOC types
+- Creating Microsoft Defender IOC CSV files
+- Building Advanced Hunting KQL queries
+- Handling multiple campaigns from a single request
 
-- Parse mixed IOC input from pasted text
-- Upload one or more CSV/TXT files and process through backend API
-- Generate processing summary cards from backend response
-- Produce KQL cards with lookback-aware queries
-- Export Defender CSV from backend-provided IOC output data
-- Show clear loading and error states during API operations
-- Extract IOC values from CSV value column and detect campaign name from CSV event_info
-- Support optional manual campaign name input that overrides detected campaign names
+TSOC IOC Portal automates this workflow through a modern browser-based interface while keeping all parsing and business logic inside a FastAPI backend.
 
-## Architecture
+---
 
-- Backend: FastAPI under backend/app
-- Frontend: React under frontend
-- Communication: HTTP API calls from frontend to backend
+# Features
 
-Backend modules retained as core source of truth:
+## IOC Processing
 
-- parser
-- kql_builder
-- parse route/API
-- backend tests
+- Paste raw IOC text
+- Upload one or more CSV/TXT files
+- Drag & Drop file upload
+- Automatic IOC normalization and refanging
+- Duplicate removal
+- IOC type classification
+- Campaign detection from uploaded CSV files
+- Optional manual campaign override
+- Multi-campaign support
+- Detection summary dashboard
 
-## Frontend structure
+---
 
-Frontend logic is separated into:
+## Microsoft Defender Export
 
-- frontend/src/components
-- frontend/src/services
-- frontend/src/styles
+- Microsoft Defender IOC CSV generation
+- Automatic Title and Description generation
+- Per-campaign metadata support
+- Category detection from uploaded intelligence
+- Optional manual default category
+- Empty ExpirationTime (Never expires)
+- Empty RecommendedActions
+- Ready for Defender import
 
-## Setup
+---
 
-Backend and frontend must both be running for normal use.
+## Threat Hunting
 
-### Frontend API configuration
+Generate Microsoft Defender Advanced Hunting KQL queries for:
 
-The React frontend reads the backend base URL from:
+- MD5
+- SHA1
+- SHA256
+- IPv4
+- Domains
 
-- VITE_API_BASE_URL
+Features include:
 
-Example file:
+- Lookback selector
+- IOC counters
+- Defender table metadata
+- One-click copy
 
-- frontend/.env.example
+---
 
-Default fallback is http://localhost:8000 if the environment variable is not set.
+## User Experience
 
-### Start backend
+- Modern React dashboard
+- Backend-driven processing
+- Drag & Drop uploads
+- Processing summary cards
+- Loading states
+- Friendly validation messages
+- Collapsible ignored-items panel
+- Clear workflow reset
+- Multi-file upload support
 
-1. Open a terminal in backend.
-2. Install Python dependencies if needed.
-3. Run:
+---
 
-- uvicorn app.main:app --reload
+# Architecture
 
-The API is available by default at http://127.0.0.1:8000.
+```
+                React Frontend
+                       │
+                HTTP REST API
+                       │
+               FastAPI Backend
+                       │
+ ┌─────────────────────────────────────┐
+ │ Parser                             │
+ │ Refang                             │
+ │ IOC Classification                 │
+ │ Deduplication                      │
+ │ Campaign Detection                 │
+ │ Category Detection                 │
+ │ KQL Builder                        │
+ │ Defender CSV Generator             │
+ └─────────────────────────────────────┘
+```
 
-### Start frontend
+The backend is the **single source of truth** for:
 
-1. Open a second terminal in frontend.
-2. Install dependencies:
+- Parsing
+- Validation
+- IOC normalization
+- Refanging
+- Deduplication
+- Campaign handling
+- Category handling
+- KQL generation
+- Defender CSV generation
 
-- npm install
+---
 
-3. Start development server:
+# Tech Stack
 
-- npm run dev
+### Frontend
 
-Frontend runs by default at http://127.0.0.1:5173.
+- React
+- Vite
+- JavaScript
 
-### Optional Windows dev launcher
+### Backend
 
-You can start backend and frontend in separate PowerShell windows with:
+- FastAPI
+- Python
 
-- .\scripts\dev.ps1
+### Security
 
-## Usage
+- Microsoft Defender
+- Advanced Hunting KQL
 
-1. Open the frontend URL in a browser.
-2. Paste IOC text or upload CSV/TXT files.
-3. Select lookback window.
-4. Optionally enter a campaign name.
-5. Click Process IOCs.
-6. For file uploads, review the upload summary (files uploaded, IOCs extracted, detected campaign name).
-7. Review summary cards, parsed IOC results, and generated KQL cards.
-8. Export Defender CSV when needed.
+---
 
-The frontend does not perform IOC parsing logic itself. IOC processing is delegated to backend API endpoints.
+# Project Structure
 
-## Manual validation checklist
+```
+tsoc-ioc-portal/
 
-- Paste mixed IOC input and confirm classification results.
-- Verify KQL cards appear only for relevant IOC types.
-- Change the lookback value and confirm KQL updates.
-- Copy each query and confirm clipboard content.
-- Verify CSV export still works as expected.
+├── backend/
+│   └── app/
+│       ├── parser.py
+│       ├── kql_builder.py
+│       ├── defender_csv.py
+│       └── ...
+│
+├── frontend/
+│   └── src/
+│       ├── components/
+│       ├── services/
+│       └── styles/
+│
+├── docs/
+│   ├── demo.gif
+│   └── screenshots/
+│
+└── README.md
+```
 
-## Frontend validation checklist
+---
 
-- Start backend and frontend servers.
-- Paste mixed IOCs and verify parse response renders in UI.
-- Upload CSV/TXT and verify parsing works.
-- Confirm Defender CSV export works.
-- Confirm KQL cards generate correctly.
-- Confirm lookback selector updates KQL output.
-- Confirm copy buttons work on KQL cards.
-- Confirm loading state appears during requests.
-- Confirm clear error messages are shown for API failures.
+# Installation
 
-## Testing
+## Backend
 
-Backend tests remain in place and should not be removed.
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
 
-Run the full backend test suite:
+Backend:
 
-- cd backend
-- pytest
+```
+http://localhost:8000
+```
 
-## Screenshots / GIF
+---
 
-Screenshot and GIF assets are not included yet. A placeholder will be added in a future update once UI captures are ready.
+## Frontend
 
-## Scope notes
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-This release does not add authentication, database storage, external threat intel lookups, or third-party integrations.
+Frontend:
+
+```
+http://localhost:5173
+```
+
+The frontend reads the backend URL from:
+
+```
+VITE_API_BASE_URL
+```
+
+Default:
+
+```
+http://localhost:8000
+```
+
+---
+
+# Usage
+
+1. Paste IOC text or upload CSV/TXT files.
+2. (Optional) Enter a campaign name.
+3. Select the default Defender category.
+4. Choose a lookback period.
+5. Click **Process IOCs**.
+6. Review:
+   - Detection Summary
+   - Detected Indicators
+   - Generated KQL
+7. Export a Microsoft Defender IOC CSV.
+
+---
+
+# Testing
+
+## Backend
+
+```bash
+cd backend
+pytest
+```
+
+## Frontend
+
+```bash
+npm test
+```
+
+---
+
+# Screenshots
+
+## IOC Intake
+
+![IOC Intake](docs/screenshots/home.png)
+
+---
+
+## Detection Summary
+
+![Detection Summary](docs/screenshots/detection-summary.png)
+
+---
+
+## KQL Builder
+
+![KQL Builder](docs/screenshots/kql-builder.png)
+
+---
+
+## Microsoft Defender Export
+
+![Defender Export](docs/screenshots/defender-export.png)
+
+---
+
+# Demo
+
+![Demo](docs/demo.gif)
+
+---
+
+# Roadmap
+
+Future improvements may include:
+
+- VirusTotal integration
+- MISP integration
+- Additional IOC types
+- Additional SIEM/XDR export formats
+- Azure deployment
+- Public hosted version
+
+---
+
+# Current Release
+
+**Version:** `v1.0.0`
+
+---
+
+# License
+
+MIT License

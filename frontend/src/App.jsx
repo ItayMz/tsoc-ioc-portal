@@ -123,7 +123,7 @@ function App() {
         <div>
           <p className="eyebrow">SOC Automation Workbench</p>
           <h1>TSOC IOC Portal</h1>
-          <p className="muted">Backend API is the source of truth for parsing, validation, enrichment, and KQL generation.</p>
+          <p className="muted">Transform raw threat intelligence into Microsoft Defender IOC imports and Advanced Hunting KQL queries..</p>
         </div>
         <span className="status-badge">API Driven</span>
       </header>
