@@ -9,9 +9,10 @@ from app.exporters.defender_excel import export_campaign_to_excel_bytes
 from app.models.campaign import Campaign, CampaignStatistics
 from app.models.ioc import ParsedIOC
 from app.services.kql_builder import build_kql_queries
-from app.services.parser import parse_bulk_text
+from app.services.parser import parse_bulk_text, validate_raw_text_size
 
 router = APIRouter()
+MAX_UPLOAD_FILES = 10
 
 
 class IOCMetadata(BaseModel):
@@ -106,7 +107,26 @@ def _resolve_manual_campaign_name(payload: ParseRequest) -> str | None:
     return None
 
 
+def _validate_payload_limits(payload: ParseRequest) -> None:
+    try:
+        validate_raw_text_size(payload.raw_text)
+    except ValueError as exc:
+        raise HTTPException(status_code=413, detail=str(exc)) from exc
+
+    source_files = {
+        str(row.sourceFile).strip()
+        for row in (payload.iocMetadata or [])
+        if row.sourceFile and str(row.sourceFile).strip()
+    }
+    if len(source_files) > MAX_UPLOAD_FILES:
+        raise HTTPException(
+            status_code=400,
+            detail="Upload exceeds the maximum of 10 files per request.",
+        )
+
+
 def _parse_indicators_from_payload(payload: ParseRequest) -> list[ParsedIOC]:
+    _validate_payload_limits(payload)
     try:
         return parse_bulk_text(payload.raw_text)
     except ValueError as exc:

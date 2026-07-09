@@ -23,6 +23,16 @@ LABELS = {
 
 SEPARATORS = {",", ";", ":", "|", "(", ")", "[", "]", "{", "}"}
 MAX_LINE_LENGTH = 8192
+MAX_UPLOAD_FILE_SIZE_BYTES = 5 * 1024 * 1024
+MAX_RAW_TEXT_SIZE_BYTES = 5 * 1024 * 1024
+
+
+def validate_raw_text_size(raw_text: str | None) -> None:
+    if raw_text is None:
+        return
+
+    if len(str(raw_text).encode("utf-8")) > MAX_RAW_TEXT_SIZE_BYTES:
+        raise ValueError("Pasted text exceeds the 5 MB limit.")
 
 
 def _extract_candidates(raw_text: str) -> list[str]:
@@ -86,6 +96,9 @@ def parse_bulk_text(raw_text: str) -> list[ParsedIOC]:
 def prepare_text_from_upload(file_bytes: bytes, filename: str) -> str:
     if not file_bytes:
         raise ValueError("The uploaded file is empty.")
+
+    if len(file_bytes) > MAX_UPLOAD_FILE_SIZE_BYTES:
+        raise ValueError("The uploaded file exceeds the 5 MB limit.")
 
     if not filename or not filename.lower().endswith((".csv", ".txt")):
         raise ValueError("Unsupported file type. Please upload a .csv or .txt file.")

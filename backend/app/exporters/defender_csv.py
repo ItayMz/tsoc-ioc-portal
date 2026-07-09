@@ -51,13 +51,21 @@ CATEGORY_ALIASES = {
     'unwanted software': Category.UNWANTED_SOFTWARE,
 }
 
+FORMULA_PREFIX_CHARACTERS = ("=", "+", "-", "@", "\t", "\r", "\n")
+
+
+def sanitize_spreadsheet_cell(value: str) -> str:
+    if value.startswith(FORMULA_PREFIX_CHARACTERS):
+        return f"'{value}"
+    return value
+
 
 def _to_csv_value(value: object) -> str:
     if value is None:
         return ''
     if isinstance(value, Enum):
-        return str(value.value)
-    return str(value)
+        return sanitize_spreadsheet_cell(str(value.value))
+    return sanitize_spreadsheet_cell(str(value))
 
 
 def normalize_category(raw_category: str | None) -> Category:
@@ -162,8 +170,8 @@ def export_campaign_to_csv_bytes(
                 '',
                 _to_csv_value(indicator.action),
                 _to_csv_value(indicator.severity),
-                build_row_title(campaign_name),
-                build_row_description(campaign_name),
+                _to_csv_value(build_row_title(campaign_name)),
+                _to_csv_value(build_row_description(campaign_name)),
                 '',
                 '',
                 _to_csv_value(category),
