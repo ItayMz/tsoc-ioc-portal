@@ -102,9 +102,18 @@ def test_parse_endpoint_includes_kql_queries_with_existing_ioc_output():
     assert response.total_count == 1
     assert response.valid_count == 1
     assert response.indicators[0].indicator_type is IndicatorType.URL
-    assert response.kqlQueries["urls"] is not None
-    assert response.kqlQueries["md5"] is None
-    assert response.kqlQueries["urls"]["query"].startswith("let IOC_URLS")
+    assert response.kqlQueries["urlWebDomain"] is not None
+    assert response.kqlQueries["fileHash"] is None
+    assert response.kqlQueries["urlWebDomain"]["query"].startswith("EmailUrlInfo")
+
+
+def test_parse_endpoint_kql_queries_contract_uses_only_official_keys():
+    response = parse_bulk_iocs(ParseRequest(raw_text="https://example.com 8.8.8.8 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+
+    assert set(response.kqlQueries.keys()) == {"fileHash", "ip", "urlWebDomain"}
+
+    legacy_keys = {"md5", "sha1", "sha256", "ipv4", "ipv6", "domains", "urls"}
+    assert legacy_keys.isdisjoint(response.kqlQueries.keys())
 
 
 def test_parse_endpoint_uses_campaign_name_for_metadata():
@@ -180,7 +189,7 @@ def test_parse_endpoint_handles_empty_text_input_gracefully():
     assert response.valid_count == 0
     assert response.invalid_count == 0
     assert response.indicators == []
-    assert response.kqlQueries["urls"] is None
+    assert response.kqlQueries["urlWebDomain"] is None
 
 
 def test_parse_endpoint_raises_clear_error_for_malformed_upload_payload():
@@ -202,7 +211,7 @@ def test_parse_endpoint_includes_processing_summary_counts():
     assert response.summary.domains == 1
     assert response.summary.urls == 1
     assert response.summary.duplicatesRemoved >= 1
-    assert response.summary.queriesGenerated == 3
+    assert response.summary.queriesGenerated == 2
 
 
 def test_large_mixed_ioc_input_completes_quickly():

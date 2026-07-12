@@ -549,6 +549,18 @@ th {
   margin-bottom: 0.6rem;
 }
 
+.kql-copy-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.kql-copy-confirmation {
+  color: #86efac;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 .query-block {
   margin: 0;
   max-height: 320px;

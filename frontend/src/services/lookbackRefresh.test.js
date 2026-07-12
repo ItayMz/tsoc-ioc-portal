@@ -48,13 +48,13 @@ test('lookback refresh result replaces KQL while preserving previously displayed
   const previousResult = {
     indicators: [{ refanged_value: 'example.com', valid: true }],
     summary: { valid: 1 },
-    kqlQueries: { domains: 'old query' },
+    kqlQueries: { urlWebDomain: 'old query' },
   }
 
   const refreshedResult = {
     indicators: [{ refanged_value: 'mutated-but-not-used', valid: true }],
     summary: { valid: 999 },
-    kqlQueries: { domains: 'new query' },
+    kqlQueries: { urlWebDomain: 'new query' },
   }
 
   const merged = applyLookbackRefreshResult(previousResult, refreshedResult)
@@ -68,7 +68,7 @@ test('lookback refresh failure message remains friendly and previous result can 
   const previousResult = {
     indicators: [{ refanged_value: 'example.com', valid: true }],
     summary: { valid: 1 },
-    kqlQueries: { domains: 'stable query' },
+    kqlQueries: { urlWebDomain: 'stable query' },
   }
 
   assert.equal(

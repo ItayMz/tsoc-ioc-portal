@@ -17,208 +17,118 @@ def _ioc(value: str, indicator_type: IndicatorType) -> ParsedIOC:
     )
 
 
-def test_md5_only_input_generates_only_md5_kql():
-    queries = build_kql_queries({"md5": [_ioc("ABCDEF0123456789ABCDEF0123456789", IndicatorType.FILE_MD5)]})
+def test_file_hash_query_combines_md5_sha1_sha256_and_uses_official_tables_and_fields():
+    queries = build_kql_queries(
+        {
+            "md5": [_ioc("ABCDEF0123456789ABCDEF0123456789", IndicatorType.FILE_MD5)],
+            "sha1": [_ioc("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", IndicatorType.FILE_SHA1)],
+            "sha256": [_ioc("b" * 64, IndicatorType.FILE_SHA256)],
+        }
+    )
 
-    assert queries["md5"] is not None
-    assert queries["sha1"] is None
-    assert queries["sha256"] is None
-    assert queries["ipv4"] is None
-    assert queries["ipv6"] is None
-    assert queries["domains"] is None
-    assert queries["urls"] is None
-
-
-def test_sha1_only_input_generates_only_sha1_kql():
-    queries = build_kql_queries({"sha1": [_ioc("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", IndicatorType.FILE_SHA1)]})
-
-    assert queries["sha1"] is not None
-    assert queries["md5"] is None
-    assert queries["sha256"] is None
-
-
-def test_sha256_only_input_generates_only_sha256_kql():
-    queries = build_kql_queries({"sha256": [_ioc("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", IndicatorType.FILE_SHA256)]})
-
-    assert queries["sha256"] is not None
-    assert queries["md5"] is None
-    assert queries["sha1"] is None
-
-
-def test_ipv4_only_input_generates_only_ipv4_kql():
-    queries = build_kql_queries({"ipv4": [_ioc("8.8.8.8", IndicatorType.IP_ADDRESS)]})
-
-    assert queries["ipv4"] is not None
-    assert queries["ipv6"] is None
-    assert queries["domains"] is None
-    assert queries["urls"] is None
-
-
-def test_ipv6_only_input_generates_only_ipv6_kql():
-    queries = build_kql_queries({"ipv6": [_ioc("2001:db8::1", IndicatorType.IP_ADDRESS)]})
-
-    assert queries["ipv6"] is not None
-    assert queries["ipv4"] is None
+    query = queries["fileHash"]["query"]
+    assert query is not None
+    assert "let IOC_HASHES = dynamic([" in query
+    assert "abcdef0123456789abcdef0123456789" in query
+    assert "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" in query
+    assert '"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"' in query
+    assert "DeviceProcessEvents" in query
+    assert "DeviceNetworkEvents" in query
+    assert "DeviceFileEvents" in query
+    assert "DeviceRegistryEvents" in query
+    assert "EmailAttachmentInfo" in query
+    assert "DeviceEvents" not in query
+    assert "SHA1 has_any (IOC_HASHES)" in query
+    assert "MD5 has_any (IOC_HASHES)" in query
+    assert "SHA256 has_any (IOC_HASHES)" in query
+    assert "InitiatingProcessSHA1 has_any (IOC_HASHES)" in query
+    assert "InitiatingProcessMD5 has_any (IOC_HASHES)" in query
+    assert "InitiatingProcessSHA256 has_any (IOC_HASHES)" in query
+    assert "has_any" in query
+    assert "| limit 10" in query
+    assert "search" not in query.lower()
+    assert queries["fileHash"]["tables"] == [
+        "DeviceProcessEvents",
+        "DeviceNetworkEvents",
+        "DeviceFileEvents",
+        "DeviceRegistryEvents",
+        "EmailAttachmentInfo",
+    ]
 
 
-def test_domain_only_input_generates_only_domains_kql():
-    queries = build_kql_queries({"domains": [_ioc("Example.COM", IndicatorType.DOMAIN_NAME)]})
+def test_ip_query_combines_ipv4_ipv6_and_uses_remote_local_in_lookup():
+    queries = build_kql_queries(
+        {
+            "ipv4": [_ioc("8.8.8.8", IndicatorType.IP_ADDRESS)],
+            "ipv6": [_ioc("2001:db8::1", IndicatorType.IP_ADDRESS)],
+        }
+    )
 
-    assert queries["domains"] is not None
-    assert queries["urls"] is None
+    query = queries["ip"]["query"]
+    assert query is not None
+    assert "let IOC_IPS = dynamic([" in query
+    assert '"8.8.8.8"' in query
+    assert '"2001:db8::1"' in query
+    assert "DeviceNetworkEvents" in query
+    assert "| where RemoteIP in (IOC_IPS)" in query
+    assert "or LocalIP in (IOC_IPS)" in query
+    assert "| limit 10" in query
+    assert queries["ip"]["tables"] == ["DeviceNetworkEvents"]
 
 
-def test_url_only_input_generates_only_urls_kql():
-    queries = build_kql_queries({"urls": [_ioc("https://example.com/path?x=1", IndicatorType.URL)]})
+def test_url_web_domain_query_combines_domains_urls_with_contains_on_official_tables_and_fields():
+    queries = build_kql_queries(
+        {
+            "domains": [_ioc("evil[.]com", IndicatorType.DOMAIN_NAME)],
+            "urls": [_ioc("hxxps://evil[.]com/path?a=1", IndicatorType.URL)],
+        }
+    )
 
-    assert queries["urls"] is not None
-    assert queries["domains"] is None
+    query = queries["urlWebDomain"]["query"]
+    assert query is not None
+    assert "EmailUrlInfo" in query
+    assert "| union DeviceNetworkEvents" in query
+    assert 'Url contains "evil.com"' in query
+    assert 'RemoteUrl contains "evil.com"' in query
+    assert 'Url contains "https://evil.com/path?a=1"' in query
+    assert 'RemoteUrl contains "https://evil.com/path?a=1"' in query
+    assert "contains" in query
+    assert "| limit 10" in query
+    assert "DeviceDnsEvents" not in query
+    assert "UrlClickEvents" not in query
+    assert "AlertEvidence" not in query
+    assert queries["urlWebDomain"]["tables"] == ["EmailUrlInfo", "DeviceNetworkEvents"]
 
 
-def test_mixed_ioc_input_generates_all_relevant_query_blocks():
+def test_only_three_official_query_types_are_returned_and_empty_categories_are_not_generated():
+    queries = build_kql_queries({"md5": [_ioc("abc", IndicatorType.FILE_MD5)]})
+
+    assert set(queries.keys()) == {"fileHash", "ip", "urlWebDomain"}
+    assert queries["fileHash"] is not None
+    assert queries["ip"] is None
+    assert queries["urlWebDomain"] is None
+
+
+def test_lookback_is_preserved_and_invalid_lookback_defaults_to_90_days():
+    query_30 = build_kql_queries({"md5": [_ioc("abc", IndicatorType.FILE_MD5)]}, lookback_days=30)
+    query_invalid = build_kql_queries({"md5": [_ioc("abc", IndicatorType.FILE_MD5)]}, lookback_days=999)
+
+    assert "ago(30d)" in query_30["fileHash"]["query"]
+    assert "ago(90d)" in query_invalid["fileHash"]["query"]
+    assert query_30["fileHash"]["lookbackDays"] == 30
+    assert query_invalid["fileHash"]["lookbackDays"] == 90
+
+
+def test_no_unrestricted_search_operator_is_generated_for_any_query_type():
     queries = build_kql_queries(
         {
             "md5": [_ioc("abc", IndicatorType.FILE_MD5)],
-            "sha1": [_ioc("def", IndicatorType.FILE_SHA1)],
-            "sha256": [_ioc("ghi", IndicatorType.FILE_SHA256)],
             "ipv4": [_ioc("8.8.8.8", IndicatorType.IP_ADDRESS)],
-            "ipv6": [_ioc("2001:db8::1", IndicatorType.IP_ADDRESS)],
             "domains": [_ioc("example.com", IndicatorType.DOMAIN_NAME)],
-            "urls": [_ioc("https://example.com", IndicatorType.URL)],
         }
     )
 
-    assert queries["md5"] is not None
-    assert queries["sha1"] is not None
-    assert queries["sha256"] is not None
-    assert queries["ipv4"] is not None
-    assert queries["ipv6"] is not None
-    assert queries["domains"] is not None
-    assert queries["urls"] is not None
-
-
-def test_empty_input_generates_no_query_blocks():
-    queries = build_kql_queries({})
-
-    assert queries["md5"] is None
-    assert queries["sha1"] is None
-    assert queries["sha256"] is None
-    assert queries["ipv4"] is None
-    assert queries["ipv6"] is None
-    assert queries["domains"] is None
-    assert queries["urls"] is None
-
-
-def test_duplicate_iocs_are_removed():
-    queries = build_kql_queries(
-        {
-            "md5": [
-                _ioc("abc", IndicatorType.FILE_MD5),
-                _ioc("abc", IndicatorType.FILE_MD5),
-                _ioc("def", IndicatorType.FILE_MD5),
-            ]
-        }
-    )
-
-    assert '"abc"' in queries["md5"]["query"]
-    assert '"def"' in queries["md5"]["query"]
-    assert queries["md5"]["query"].count('"abc"') == 1
-
-
-def test_defanged_iocs_are_refanged_before_kql_generation():
-    queries = build_kql_queries({"domains": [_ioc("evil[.]com", IndicatorType.DOMAIN_NAME)]})
-
-    assert "evil.com" in queries["domains"]["query"]
-    assert "evil[.]com" not in queries["domains"]["query"]
-
-
-def test_kql_escaping_works_for_quotes_and_backslashes():
-    queries = build_kql_queries({"urls": [_ioc('https://example.com/a\\b"c', IndicatorType.URL)]})
-
-    assert 'https://example.com/a\\\\b\\"c' in queries["urls"]["query"]
-
-
-def test_default_lookback_uses_90_days():
-    queries = build_kql_queries({"md5": [_ioc("abc", IndicatorType.FILE_MD5)]})
-
-    assert "ago(90d)" in queries["md5"]["query"]
-
-
-def test_custom_lookback_uses_7_days():
-    queries = build_kql_queries({"md5": [_ioc("abc", IndicatorType.FILE_MD5)]}, lookback_days=7)
-
-    assert "ago(7d)" in queries["md5"]["query"]
-
-
-def test_custom_lookback_uses_30_days():
-    queries = build_kql_queries({"md5": [_ioc("abc", IndicatorType.FILE_MD5)]}, lookback_days=30)
-
-    assert "ago(30d)" in queries["md5"]["query"]
-
-
-def test_custom_lookback_uses_180_days():
-    queries = build_kql_queries({"md5": [_ioc("abc", IndicatorType.FILE_MD5)]}, lookback_days=180)
-
-    assert "ago(180d)" in queries["md5"]["query"]
-
-
-def test_custom_lookback_uses_365_days():
-    queries = build_kql_queries({"md5": [_ioc("abc", IndicatorType.FILE_MD5)]}, lookback_days=365)
-
-    assert "ago(365d)" in queries["md5"]["query"]
-
-
-def test_invalid_lookback_falls_back_to_90_days():
-    queries = build_kql_queries({"md5": [_ioc("abc", IndicatorType.FILE_MD5)]}, lookback_days=999)
-
-    assert "ago(90d)" in queries["md5"]["query"]
-
-
-def test_md5_query_returns_expected_table_metadata():
-    queries = build_kql_queries({"md5": [_ioc("abc", IndicatorType.FILE_MD5)]})
-
-    assert queries["md5"]["count"] == 1
-    assert queries["md5"]["lookbackDays"] == 90
-    assert queries["md5"]["tables"] == ["DeviceFileEvents"]
-
-
-def test_sha1_query_returns_expected_table_metadata():
-    queries = build_kql_queries({"sha1": [_ioc("abc", IndicatorType.FILE_SHA1)]})
-
-    assert queries["sha1"]["count"] == 1
-    assert queries["sha1"]["tables"] == ["DeviceFileEvents"]
-
-
-def test_sha256_query_returns_expected_table_metadata():
-    queries = build_kql_queries({"sha256": [_ioc("abc", IndicatorType.FILE_SHA256)]})
-
-    assert queries["sha256"]["count"] == 1
-    assert queries["sha256"]["tables"] == ["DeviceFileEvents"]
-
-
-def test_ipv4_query_returns_expected_table_metadata():
-    queries = build_kql_queries({"ipv4": [_ioc("8.8.8.8", IndicatorType.IP_ADDRESS)]})
-
-    assert queries["ipv4"]["count"] == 1
-    assert queries["ipv4"]["tables"] == ["DeviceNetworkEvents"]
-
-
-def test_ipv6_query_returns_expected_table_metadata():
-    queries = build_kql_queries({"ipv6": [_ioc("2001:db8::1", IndicatorType.IP_ADDRESS)]})
-
-    assert queries["ipv6"]["count"] == 1
-    assert queries["ipv6"]["tables"] == ["DeviceNetworkEvents"]
-
-
-def test_domains_query_returns_expected_table_metadata():
-    queries = build_kql_queries({"domains": [_ioc("example.com", IndicatorType.DOMAIN_NAME)]})
-
-    assert queries["domains"]["count"] == 1
-    assert queries["domains"]["tables"] == ["DeviceNetworkEvents", "DeviceDnsEvents"]
-
-
-def test_urls_query_returns_expected_table_metadata():
-    queries = build_kql_queries({"urls": [_ioc("https://example.com", IndicatorType.URL)]})
-
-    assert queries["urls"]["count"] == 1
-    assert queries["urls"]["tables"] == ["DeviceNetworkEvents", "DeviceProcessEvents"]
+    for key in ["fileHash", "ip", "urlWebDomain"]:
+        query = queries[key]["query"]
+        assert query is not None
+        assert "search" not in query.lower()
