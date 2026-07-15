@@ -27,18 +27,6 @@ function normalizeIndicatorType(value) {
     .replace(/[^a-z0-9]/g, '')
 }
 
-export function getFriendlyIgnoredReason(reason) {
-  if (reason === 'unsupported_indicator' || reason === 'empty_value') {
-    return 'Ignored non-IOC text'
-  }
-
-  if (!reason) {
-    return 'Ignored'
-  }
-
-  return 'Ignored'
-}
-
 function hasKnownType(ioc) {
   const type = String(ioc?.indicator_type || '').trim()
   if (!type) {
@@ -49,26 +37,18 @@ function hasKnownType(ioc) {
   return lowered !== 'n/a' && lowered !== 'unknown'
 }
 
-export function splitDetectedAndIgnored(indicators) {
+export function getDetectedIndicators(indicators) {
   const detected = []
-  const ignored = []
 
   for (const ioc of indicators || []) {
     const isDetected = Boolean(ioc?.valid) && hasKnownType(ioc)
 
     if (isDetected) {
       detected.push(ioc)
-      continue
     }
-
-    ignored.push({
-      original_value: ioc?.original_value || '',
-      refanged_value: ioc?.refanged_value || '',
-      reason: getFriendlyIgnoredReason(ioc?.reason),
-    })
   }
 
-  return { detected, ignored }
+  return detected
 }
 
 export function getIndicatorDisplayValue(ioc, mode) {
@@ -165,10 +145,3 @@ export function groupDetectedIndicatorsByType(detectedIndicators) {
   return groups.filter((group) => group.items.length > 0)
 }
 
-export function isIgnoredCollapsedByDefault() {
-  return true
-}
-
-export function toggleIgnoredExpanded(currentValue) {
-  return !Boolean(currentValue)
-}

@@ -331,6 +331,19 @@ button:disabled {
   animation: summary-fade-in 220ms ease-out;
 }
 
+.crowdstrike-export-card {
+  animation: summary-fade-in 220ms ease-out;
+}
+
+.control-row-column {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.crowdstrike-description {
+  min-height: 120px;
+}
+
 .backend-status {
   padding: 0.7rem 0.95rem;
 }
@@ -535,39 +548,8 @@ button:disabled {
 .indicator-empty-state {
   margin: 0.25rem 0 0;
 }
-
-.ignored-panel {
-  margin-top: 0.8rem;
-  border-top: 1px solid var(--border);
-  padding-top: 0.7rem;
-}
-
-.ignored-toggle {
-  border-color: rgba(148, 163, 184, 0.4);
-  background: rgba(30, 41, 59, 0.55);
-}
-
-.ignored-table-wrap {
-  margin-top: 0.6rem;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  text-align: left;
-  padding: 0.5rem;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.9rem;
-  vertical-align: top;
-}
-
-th {
-  color: #bfdbfe;
-  font-weight: 600;
+.crowdstrike-export-empty-message {
+  margin-top: 0.4rem;
 }
 
 .kql-grid {

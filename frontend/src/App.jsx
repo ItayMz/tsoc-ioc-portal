@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import ControlPanel from './components/ControlPanel'
+import CrowdStrikeBlockingExport from './components/CrowdStrikeBlockingExport'
 import CrowdStrikeResults from './components/CrowdStrikeResults'
 import ErrorBanner from './components/ErrorBanner'
 import IndicatorResults from './components/IndicatorResults'
@@ -38,6 +39,13 @@ import {
   getWorkflowPresentation,
   WORKFLOW_MODE,
 } from './services/workflowMode.js'
+import {
+  CROWDSTRIKE_DEFAULT_DESCRIPTION,
+  CROWDSTRIKE_DEFAULT_SEVERITY,
+  exportCrowdStrikeBlockingCsv,
+  getCrowdStrikeBlockingEligibleCount,
+  normalizeCrowdStrikeSeverity,
+} from './services/crowdstrikeBlockingExport.js'
 import './styles/theme.css'
 import './styles/app.css'
 
@@ -59,6 +67,8 @@ function App() {
   const [showConnectedBanner, setShowConnectedBanner] = useState(false)
   const [isLookbackRefreshing, setIsLookbackRefreshing] = useState(false)
   const [workflowMode, setWorkflowMode] = useState(WORKFLOW_MODE.DEFENDER)
+  const [crowdStrikeSeverity, setCrowdStrikeSeverity] = useState(CROWDSTRIKE_DEFAULT_SEVERITY)
+  const [crowdStrikeDescription, setCrowdStrikeDescription] = useState(CROWDSTRIKE_DEFAULT_DESCRIPTION)
   const isMountedRef = useRef(true)
   const connectedHideTimerRef = useRef(null)
   const lookbackRefreshInFlightRef = useRef(false)
@@ -74,6 +84,9 @@ function App() {
   const senderEmailAddresses = getDetectedSenderEmailAddresses(parseResult?.indicators)
   const showSenderEmailInfoCard = senderEmailAddresses.length > 0
   const workflowPresentation = getWorkflowPresentation(workflowMode)
+  const crowdStrikeCampaignName = campaignName || detectedCampaignName || ''
+  const crowdStrikeEligibleCount = getCrowdStrikeBlockingEligibleCount(parseResult?.indicators)
+  const canCrowdStrikeExport = crowdStrikeEligibleCount > 0
 
   const onBackendStateChange = (nextState) => {
     if (!isMountedRef.current) {
@@ -279,8 +292,26 @@ function App() {
     setLastSuccessfulParseResult(null)
     lookbackRefreshInFlightRef.current = false
     setIsLookbackRefreshing(false)
+    setCrowdStrikeSeverity(CROWDSTRIKE_DEFAULT_SEVERITY)
+    setCrowdStrikeDescription(CROWDSTRIKE_DEFAULT_DESCRIPTION)
     setWorkflowMode(WORKFLOW_MODE.DEFENDER)
     setClearVersion((current) => current + 1)
+  }
+
+  const handleCrowdStrikeExport = () => {
+    const exported = exportCrowdStrikeBlockingCsv(parseResult?.indicators, {
+      severity: crowdStrikeSeverity,
+      description: crowdStrikeDescription,
+      campaignName: crowdStrikeCampaignName,
+    })
+
+    if (!exported) {
+      setErrorMessage('No IPv4, MD5, or SHA256 indicators are available for CrowdStrike blocking export.')
+    }
+  }
+
+  const handleCrowdStrikeSeverityChange = (nextSeverity) => {
+    setCrowdStrikeSeverity(normalizeCrowdStrikeSeverity(nextSeverity))
   }
 
   const handleLookbackChange = async (nextLookbackDays) => {
@@ -328,6 +359,18 @@ function App() {
     }
   }
 
+  const activeExportLabel = workflowPresentation.isDefender
+    ? 'Export Defender CSV'
+    : 'Export CrowdStrike CSV'
+
+  const activeExportHandler = workflowPresentation.isDefender
+    ? handleExport
+    : handleCrowdStrikeExport
+
+  const activeExportDisabled = workflowPresentation.isDefender
+    ? backendActionsDisabled || !exportState.canExport
+    : loading || !canCrowdStrikeExport
+
   return (
     <div className="app-shell">
       <header className="top-header card">
@@ -367,9 +410,19 @@ function App() {
         onWorkflowModeChange={setWorkflowMode}
         onProcess={handleProcess}
         onUpload={handleUpload}
-        onExport={handleExport}
+        onExport={activeExportHandler}
         onClear={handleClear}
-        canExport={exportState.canExport}
+        exportButtonLabel={activeExportLabel}
+        exportDisabled={activeExportDisabled}
+        crowdStrikeConfigSection={!workflowPresentation.isDefender ? (
+          <CrowdStrikeBlockingExport
+            indicators={parseResult?.indicators}
+            severity={crowdStrikeSeverity}
+            description={crowdStrikeDescription}
+            onSeverityChange={handleCrowdStrikeSeverityChange}
+            onDescriptionChange={setCrowdStrikeDescription}
+          />
+        ) : null}
         hasAccumulatedResult={Boolean(lastSuccessfulParseResult)}
         backendConnected={isBackendConnected(backendConnectionState)}
         backendActionsDisabled={backendActionsDisabled}

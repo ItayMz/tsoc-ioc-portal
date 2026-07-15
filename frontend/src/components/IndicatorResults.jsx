@@ -5,16 +5,14 @@ import {
   DETECTED_EMPTY_MESSAGE,
   getCopyAllSuccessMessage,
   getGroupCopySuccessMessage,
+  getDetectedIndicators,
   getInitialExpandedGroups,
   getIndicatorDisplayValue,
   INDICATOR_COPY_ERROR_MESSAGE,
   groupDetectedIndicatorsByType,
   INDICATOR_DISPLAY_MODE,
-  isIgnoredCollapsedByDefault,
-  splitDetectedAndIgnored,
   syncExpandedGroups,
   toggleGroupExpanded,
-  toggleIgnoredExpanded,
 } from '../services/indicatorPresentation.js'
 
 const TOAST_AUTO_HIDE_MS = 2200
@@ -24,9 +22,8 @@ function toGroupElementId(label) {
 }
 
 function IndicatorResults({ indicators }) {
-  const { detected, ignored } = splitDetectedAndIgnored(indicators)
+  const detected = getDetectedIndicators(indicators)
   const groupedIndicators = useMemo(() => groupDetectedIndicatorsByType(detected), [detected])
-  const [isIgnoredExpanded, setIsIgnoredExpanded] = useState(!isIgnoredCollapsedByDefault())
   const [displayMode, setDisplayMode] = useState(INDICATOR_DISPLAY_MODE.REFANGED)
   const [expandedGroups, setExpandedGroups] = useState(() => getInitialExpandedGroups(groupedIndicators))
   const [copyToast, setCopyToast] = useState(null)
@@ -173,41 +170,6 @@ function IndicatorResults({ indicators }) {
       {copyToast && (
         <div className={`copy-toast copy-toast-${copyToast.tone}`} role="status" aria-live="polite">
           {copyToast.message}
-        </div>
-      )}
-
-      {ignored.length > 0 && (
-        <div className="ignored-panel">
-          <button
-            type="button"
-            className="ignored-toggle"
-            onClick={() => setIsIgnoredExpanded((current) => toggleIgnoredExpanded(current))}
-          >
-            {isIgnoredExpanded ? 'Hide ignored items' : 'Show ignored items'}
-          </button>
-
-          {isIgnoredExpanded && (
-            <div className="table-wrapper ignored-table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Original value</th>
-                    <th>Refanged value</th>
-                    <th>Reason</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ignored.map((item, index) => (
-                    <tr key={`${item.refanged_value || item.original_value || 'ignored'}-${index}`}>
-                      <td>{item.original_value || '-'}</td>
-                      <td>{item.refanged_value || '-'}</td>
-                      <td>{item.reason}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
       )}
     </section>

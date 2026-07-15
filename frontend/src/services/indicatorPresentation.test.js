@@ -8,22 +8,19 @@ import {
   DETECTED_EMPTY_MESSAGE,
   getCopyAllSuccessMessage,
   getGroupCopySuccessMessage,
+  getDetectedIndicators,
   getInitialExpandedGroups,
   getIndicatorDisplayValue,
-  getFriendlyIgnoredReason,
   INDICATOR_COPY_ERROR_MESSAGE,
   groupDetectedIndicatorsByType,
   getGroupValues,
   INDICATOR_DISPLAY_MODE,
-  isIgnoredCollapsedByDefault,
   syncExpandedGroups,
   toggleGroupExpanded,
-  splitDetectedAndIgnored,
-  toggleIgnoredExpanded,
 } from './indicatorPresentation.js'
 
 test('main table input includes only valid supported indicators', () => {
-  const { detected } = splitDetectedAndIgnored([
+  const detected = getDetectedIndicators([
     {
       original_value: 'https://good.example',
       refanged_value: 'https://good.example',
@@ -49,17 +46,8 @@ test('main table input includes only valid supported indicators', () => {
   assert.equal(detected[0].indicator_type, 'Url')
 })
 
-test('ignored items are hidden by default', () => {
-  assert.equal(isIgnoredCollapsedByDefault(), true)
-})
-
-test('ignored items can be expanded', () => {
-  assert.equal(toggleIgnoredExpanded(false), true)
-  assert.equal(toggleIgnoredExpanded(true), false)
-})
-
 test('no valid IOCs uses the expected empty-state message', () => {
-  const { detected } = splitDetectedAndIgnored([
+  const detected = getDetectedIndicators([
     {
       original_value: 'hello world',
       refanged_value: 'hello world',
@@ -71,11 +59,6 @@ test('no valid IOCs uses the expected empty-state message', () => {
 
   assert.equal(detected.length, 0)
   assert.equal(DETECTED_EMPTY_MESSAGE, 'No supported IOCs were detected.')
-})
-
-test('raw unsupported_indicator is not displayed in friendly ignored reasons', () => {
-  assert.equal(getFriendlyIgnoredReason('unsupported_indicator'), 'Ignored non-IOC text')
-  assert.notEqual(getFriendlyIgnoredReason('unsupported_indicator'), 'unsupported_indicator')
 })
 
 test('detected indicators are grouped by IOC type in display order and preserve original order within each group', () => {
@@ -213,7 +196,7 @@ test('toast messages use required copy success and failure phrasing', () => {
 })
 
 test('ignored items are excluded from grouped copy output and valid ordering is preserved', () => {
-  const { detected } = splitDetectedAndIgnored([
+  const detected = getDetectedIndicators([
     {
       original_value: 'ignore me',
       refanged_value: 'ignore me',

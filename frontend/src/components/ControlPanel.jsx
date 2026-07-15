@@ -20,7 +20,9 @@ function ControlPanel({
   onUpload,
   onExport,
   onClear,
-  canExport,
+  exportButtonLabel,
+  exportDisabled,
+  crowdStrikeConfigSection,
   hasAccumulatedResult,
   backendConnected,
   backendActionsDisabled,
@@ -153,6 +155,8 @@ function ControlPanel({
         </div>
       )}
 
+      {crowdStrikeConfigSection}
+
       <div className="button-row">
         <button className="primary" type="button" onClick={onProcess} disabled={backendActionsDisabled}>
           {loading ? 'Processing...' : (hasAccumulatedResult ? 'Add IOCs' : 'Process IOCs')}
@@ -160,11 +164,9 @@ function ControlPanel({
         <button type="button" onClick={() => uploadRef.current?.click()} disabled={backendActionsDisabled}>
           {hasAccumulatedResult ? 'Add Files to Current Export' : 'Upload CSV/TXT/XLSX Files'}
         </button>
-        {showDefenderControls && (
-          <button type="button" onClick={onExport} disabled={backendActionsDisabled || !canExport}>
-            Export Defender CSV
-          </button>
-        )}
+        <button type="button" onClick={onExport} disabled={exportDisabled}>
+          {exportButtonLabel}
+        </button>
         <button type="button" className="button-clear" onClick={onClear} disabled={loading}>
           Clear
         </button>
