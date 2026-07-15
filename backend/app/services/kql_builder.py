@@ -38,6 +38,9 @@ def _normalize_value(indicator: ParsedIOC) -> str | None:
     if indicator.indicator_type is IndicatorType.URL:
         return refang(cleaned)
 
+    if indicator.indicator_type is IndicatorType.SENDER_EMAIL_ADDRESS:
+        return refang(cleaned).lower()
+
     return refang(cleaned)
 
 
@@ -136,9 +139,14 @@ def build_kql_queries(grouped_iocs: dict[str, list[ParsedIOC]], lookback_days: i
         for indicator in grouped_iocs.get("urls", [])
         if indicator.indicator_type is IndicatorType.URL
     ]
+    sender_email_values = [
+        _normalize_value(indicator)
+        for indicator in grouped_iocs.get("senderEmailAddresses", [])
+        if indicator.indicator_type is IndicatorType.SENDER_EMAIL_ADDRESS
+    ]
     file_hash_values = _deduplicate([*md5_values, *sha1_values, *sha256_values])
     ip_values = _deduplicate([*ipv4_values, *ipv6_values])
-    url_domain_values = _deduplicate([*domain_values, *url_values])
+    url_domain_values = _deduplicate([*domain_values, *url_values, *sender_email_values])
 
     queries = {
         "fileHash": {

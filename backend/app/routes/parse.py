@@ -224,6 +224,7 @@ def _group_iocs_by_type(indicators: list[ParsedIOC]) -> dict[str, list[ParsedIOC
         "ipv6": [],
         "domains": [],
         "urls": [],
+        "senderEmailAddresses": [],
     }
 
     for indicator in indicators:
@@ -251,6 +252,8 @@ def _group_iocs_by_type(indicators: list[ParsedIOC]) -> dict[str, list[ParsedIOC
             grouped["domains"].append(indicator)
         elif indicator.indicator_type is IndicatorType.URL:
             grouped["urls"].append(indicator)
+        elif indicator.indicator_type is IndicatorType.SENDER_EMAIL_ADDRESS:
+            grouped["senderEmailAddresses"].append(indicator)
 
     return grouped
 

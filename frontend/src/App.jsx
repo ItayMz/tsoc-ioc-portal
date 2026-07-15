@@ -5,6 +5,7 @@ import ErrorBanner from './components/ErrorBanner'
 import ExportSummaryCards from './components/ExportSummaryCards'
 import IndicatorResults from './components/IndicatorResults'
 import KqlCards from './components/KqlCards'
+import AnalystPlaybook from './components/AnalystPlaybook'
 import SenderEmailInfoCard from './components/SenderEmailInfoCard'
 import SummaryCards from './components/SummaryCards'
 import ToastMessage from './components/ToastMessage'
@@ -48,6 +49,10 @@ import {
   normalizeCrowdStrikeSeverity,
 } from './services/crowdstrikeBlockingExport.js'
 import { exportQradarCsv, getQradarEligibleCount } from './services/qradarExport.js'
+import {
+  buildAnalystPlaybook,
+  shouldShowAnalystPlaybook,
+} from './services/playbookBuilder.js'
 import './styles/theme.css'
 import './styles/app.css'
 
@@ -109,8 +114,8 @@ function App() {
   const backendStatusContent = getBackendStatusContent(backendConnectionState)
   const showBackendStatusSpinner = shouldShowBackendSpinner(backendConnectionState)
   const senderEmailAddresses = getDetectedSenderEmailAddresses(parseResult?.indicators)
-  const showSenderEmailInfoCard = senderEmailAddresses.length > 0
   const workflowPresentation = getWorkflowPresentation(workflowMode)
+  const showSenderEmailInfoCard = workflowPresentation.isCrowdStrike && senderEmailAddresses.length > 0
   const crowdStrikeCampaignName = campaignName || detectedCampaignName || ''
   const crowdStrikeBlockingEligibleCount = getCrowdStrikeBlockingEligibleCount(parseResult?.indicators)
   const qradarEligibleCount = getQradarEligibleCount(parseResult?.indicators)
@@ -121,6 +126,18 @@ function App() {
     exportSummaries.crowdstrike,
     exportSummaries.qradar,
   ].filter(Boolean)
+  const showAnalystPlaybook = shouldShowAnalystPlaybook(parseResult?.indicators)
+  const playbook = buildAnalystPlaybook({
+    workflowMode: workflowPresentation.mode,
+    indicators: parseResult?.indicators,
+    generatedOutputs: {
+      advancedHuntingKql: Boolean(parseResult?.kqlQueries?.length),
+      defenderIocCsv: getValidDetectedCount(parseResult) > 0,
+      crowdStrikeAdvancedEventSearchQuery: getValidDetectedCount(parseResult) > 0,
+      crowdStrikeBlockingCsv: getValidDetectedCount(parseResult) > 0,
+      qradarCsv: qradarEligibleCount > 0,
+    },
+  })
 
   const onBackendStateChange = (nextState) => {
     if (!isMountedRef.current) {
@@ -552,12 +569,6 @@ function App() {
           {workflowPresentation.isDefender ? (
             <>
               <KqlCards queries={parseResult.kqlQueries} />
-              {showSenderEmailInfoCard && (
-                <SenderEmailInfoCard
-                  emailAddresses={senderEmailAddresses}
-                  message={workflowPresentation.senderGuidanceMessage}
-                />
-              )}
             </>
           ) : (
             <>
@@ -573,6 +584,7 @@ function App() {
               )}
             </>
           )}
+          {showAnalystPlaybook && <AnalystPlaybook playbook={playbook} />}
         </>
       )}
 

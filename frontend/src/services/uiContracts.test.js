@@ -13,6 +13,7 @@ const controlPanelPath = resolve(process.cwd(), 'src/components/ControlPanel.jsx
 const appPath = resolve(process.cwd(), 'src/App.jsx')
 const summaryCardsPath = resolve(process.cwd(), 'src/components/SummaryCards.jsx')
 const appStylesPath = resolve(process.cwd(), 'src/styles/app.css')
+const analystPlaybookPath = resolve(process.cwd(), 'src/components/AnalystPlaybook.jsx')
 
 test('Detected Indicators controls keep expected wrapper classes for aligned toggle and Copy All layout', () => {
   const componentSource = readFileSync(indicatorResultsPath, 'utf8')
@@ -235,11 +236,33 @@ test('App preserves Campaign Name state across workflow switching', () => {
   assert.equal(source.includes('setCampaignName(\'\')'), true)
 })
 
-test('App renders sender email card only when sender addresses are present', () => {
+test('App renders sender email card only in CrowdStrike workflow when sender addresses are present', () => {
   const source = readFileSync(appPath, 'utf8')
 
-  assert.equal(source.includes('showSenderEmailInfoCard && ('), true)
+  assert.equal(source.includes('workflowPresentation.isCrowdStrike && senderEmailAddresses.length > 0'), true)
+  assert.equal(source.includes('workflowPresentation.isDefender ? ('), true)
+  assert.equal(source.includes('<KqlCards queries={parseResult.kqlQueries} />'), true)
   assert.equal(source.includes('No sender email addresses detected.'), false)
+})
+
+test('App integrates analyst playbook below workflow outputs and uses builder service', () => {
+  const source = readFileSync(appPath, 'utf8')
+
+  assert.equal(source.includes('import AnalystPlaybook from'), true)
+  assert.equal(source.includes('buildAnalystPlaybook'), true)
+  assert.equal(source.includes('shouldShowAnalystPlaybook'), true)
+  assert.equal(source.includes('{showAnalystPlaybook && <AnalystPlaybook playbook={playbook} />}'), true)
+})
+
+test('Analyst playbook component and styles include card sections without automatic badges', () => {
+  const componentSource = readFileSync(analystPlaybookPath, 'utf8')
+  const cssSource = readFileSync(appStylesPath, 'utf8')
+
+  assert.equal(componentSource.includes('Analyst Playbook'), false)
+  assert.equal(componentSource.includes('className="card analyst-playbook"'), true)
+  assert.equal(componentSource.includes('className="playbook-section-heading"'), true)
+  assert.equal(componentSource.includes('Completed automatically'), false)
+  assert.equal(cssSource.includes('.analyst-playbook {'), true)
 })
 
 test('ignored items toggle and ignored panel are removed from detected indicators UI', () => {

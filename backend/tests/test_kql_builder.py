@@ -100,6 +100,42 @@ def test_url_web_domain_query_combines_domains_urls_with_contains_on_official_ta
     assert queries["urlWebDomain"]["tables"] == ["EmailUrlInfo", "DeviceNetworkEvents"]
 
 
+def test_url_web_domain_query_includes_sender_email_indicators_in_existing_emailurlinfo_query():
+    queries = build_kql_queries(
+        {
+            "senderEmailAddresses": [
+                _ioc("analyst@test.com", IndicatorType.SENDER_EMAIL_ADDRESS),
+            ],
+        }
+    )
+
+    query = queries["urlWebDomain"]["query"]
+    assert query is not None
+    assert "EmailUrlInfo" in query
+    assert '| where Url contains "analyst@test.com"' in query
+    assert '| where RemoteUrl contains "analyst@test.com"' in query or 'RemoteUrl contains "analyst@test.com"' in query
+    assert queries["urlWebDomain"]["count"] == 1
+
+
+def test_url_web_domain_query_deduplicates_sender_email_values():
+    queries = build_kql_queries(
+        {
+            "senderEmailAddresses": [
+                _ioc("Analyst@Test.com", IndicatorType.SENDER_EMAIL_ADDRESS),
+                _ioc("analyst@test.com", IndicatorType.SENDER_EMAIL_ADDRESS),
+                _ioc("analyst@test.com", IndicatorType.SENDER_EMAIL_ADDRESS),
+            ],
+        }
+    )
+
+    query = queries["urlWebDomain"]["query"]
+    assert query is not None
+    assert '\n| where Url contains "analyst@test.com"' in query
+    assert '\n    or RemoteUrl contains "analyst@test.com"' in query
+    assert 'Analyst@Test.com' not in query
+    assert queries["urlWebDomain"]["count"] == 1
+
+
 def test_only_three_official_query_types_are_returned_and_empty_categories_are_not_generated():
     queries = build_kql_queries({"md5": [_ioc("abc", IndicatorType.FILE_MD5)]})
 

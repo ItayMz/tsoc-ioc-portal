@@ -28,10 +28,11 @@ test('Defender presentation keeps Defender outputs and guidance', () => {
   assert.equal(presentation.senderGuidanceMessage, DEFENDER_SENDER_GUIDANCE)
 })
 
-test('CrowdStrike presentation disables Defender outputs and uses QRadar/Mail Relay guidance', () => {
+test('CrowdStrike presentation disables Defender outputs and uses investigation-only QRadar/Forcepoint guidance', () => {
   const presentation = getWorkflowPresentation(WORKFLOW_MODE.CROWDSTRIKE)
 
   assert.equal(presentation.isDefender, false)
   assert.equal(presentation.isCrowdStrike, true)
   assert.equal(presentation.senderGuidanceMessage, CROWDSTRIKE_SENDER_GUIDANCE)
+  assert.equal(presentation.senderGuidanceMessage.includes('blocking'), false)
 })

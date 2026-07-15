@@ -110,14 +110,16 @@ def test_parse_endpoint_mixed_csv_xlsx_metadata_preserves_campaign_and_kql_outpu
     assert response.kqlQueries["urlWebDomain"] is not None
 
 
-def test_parse_endpoint_sender_emails_do_not_generate_kql_queries():
+def test_parse_endpoint_sender_emails_generate_url_web_domain_query():
     response = parse_bulk_iocs(ParseRequest(raw_text="user@test.com analyst@test.com"))
 
     assert response.valid_count == 2
     assert response.counts_by_type == {"SenderEmailAddress": 2}
     assert response.kqlQueries["fileHash"] is None
     assert response.kqlQueries["ip"] is None
-    assert response.kqlQueries["urlWebDomain"] is None
+    assert response.kqlQueries["urlWebDomain"] is not None
+    assert 'Url contains "user@test.com"' in response.kqlQueries["urlWebDomain"]["query"]
+    assert 'Url contains "analyst@test.com"' in response.kqlQueries["urlWebDomain"]["query"]
 
 def test_parse_endpoint_returns_correct_actions_for_hashes_and_urls():
     response = parse_bulk_iocs(
