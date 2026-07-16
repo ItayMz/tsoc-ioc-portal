@@ -503,9 +503,9 @@ function App() {
     <div className="app-shell">
       <header className="top-header card">
         <div>
-          <p className="eyebrow">SOC Automation Workbench</p>
-          <h1>TSOC IOC Portal</h1>
-          <p className="muted">Transform raw threat intelligence into Microsoft Defender IOC imports and Advanced Hunting KQL queries..</p>
+          <p className="eyebrow">Built for SOC Operations</p>
+          <h1>IOC Workbench</h1>
+          <p className="muted">IOC Workbench v1.2</p>
         </div>
         <span className="status-badge">API Driven</span>
       </header>

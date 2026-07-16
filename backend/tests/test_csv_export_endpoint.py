@@ -151,7 +151,7 @@ def test_export_csv_endpoint_falls_back_to_ioc_sweep_for_missing_campaign_name()
     assert row[6] == 'Threat indicators manually submitted for blocking and investigation.'
     assert 'IOC Sweep' not in row[5]
     assert 'TSOC General IOC Collection' not in row[5]
-    assert 'TSOC IOC Portal' not in row[6]
+    assert 'IOC Workbench' not in row[6]
     assert row[9] == 'Malware'
 
 

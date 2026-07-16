@@ -1,4 +1,4 @@
-# TSOC IOC Portal
+# IOC Workbench
 
 > A full-stack SOC automation platform that transforms raw threat intelligence into Microsoft Defender IOC imports and ready-to-run Advanced Hunting KQL queries.
 
@@ -19,7 +19,7 @@ Before these indicators can be imported into Microsoft Defender or used for thre
 - Building Advanced Hunting KQL queries
 - Handling multiple campaigns from a single request
 
-TSOC IOC Portal automates this workflow through a modern browser-based interface while keeping all parsing and business logic inside a FastAPI backend.
+IOC Workbench automates this workflow through a modern browser-based interface while keeping all parsing and business logic inside a FastAPI backend.
 
 ---
 
