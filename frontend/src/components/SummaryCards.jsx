@@ -1,4 +1,5 @@
 import { buildDetectionSummary } from '../services/summaryPresentation.js'
+import Icon from './Icon.jsx'
 
 function SummaryCards({ summary, exportEligibility = null }) {
   const detectionSummary = buildDetectionSummary(summary)
@@ -9,7 +10,7 @@ function SummaryCards({ summary, exportEligibility = null }) {
   return (
     <section className="card detection-summary" aria-live="polite">
       <div className="section-header">
-        <h2>{detectionSummary.title}</h2>
+        <h2><Icon name="summary" className="inline-icon" /> {detectionSummary.title}</h2>
       </div>
 
       <div className="summary-total-wrap">
@@ -28,13 +29,15 @@ function SummaryCards({ summary, exportEligibility = null }) {
         ))}
       </div>
 
-      <div className="summary-meta-row">
-        {detectionSummary.meta.map((entry) => (
-          <p key={entry.label} className="summary-meta">
-            <span>{entry.label}:</span> <strong>{entry.value}</strong>
-          </p>
-        ))}
-      </div>
+      {detectionSummary.meta.length > 0 && (
+        <div className="summary-meta-row">
+          {detectionSummary.meta.map((entry) => (
+            <p key={entry.label} className="summary-meta">
+              <span>{entry.label}:</span> <strong>{entry.value}</strong>
+            </p>
+          ))}
+        </div>
+      )}
 
       {exportEligibility && (
         <>

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { getVisibleKqlCards } from '../services/kqlCardsPresentation.js'
+import Icon from './Icon.jsx'
 
 const KQL_COPY_RESET_MS = 1800
 
-function KqlCards({ queries }) {
+function KqlCards({ queries, onQueryCopied }) {
   if (!queries) {
     return null
   }
@@ -26,6 +27,7 @@ function KqlCards({ queries }) {
   const copyQuery = async (cardKey, queryText) => {
     try {
       await navigator.clipboard.writeText(queryText)
+      onQueryCopied?.()
       setCopiedByCard((current) => ({
         ...current,
         [cardKey]: true,
@@ -55,14 +57,9 @@ function KqlCards({ queries }) {
             <div className="kql-copy-actions">
               {copiedByCard[card.key] && <span className="kql-copy-confirmation">Copied!</span>}
               <button type="button" onClick={() => copyQuery(card.key, card.query)}>
-                {copiedByCard[card.key] ? 'Copied ✓' : 'Copy KQL'}
+                <Icon name="copy" className="inline-icon" /> {copiedByCard[card.key] ? 'Copied ✓' : 'Copy KQL'}
               </button>
             </div>
-          </div>
-          <div className="meta-row">
-            <span className="chip">IOC count: {card.count}</span>
-            <span className="chip">Lookback: {card.lookbackDays}d</span>
-            <span className="chip">Tables: {card.tables.join(', ')}</span>
           </div>
           <pre className="query-block">{card.query}</pre>
         </article>

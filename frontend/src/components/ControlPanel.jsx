@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { DEFENDER_CATEGORIES } from '../services/defenderCategories.js'
 import { WORKFLOW_MODE } from '../services/workflowMode.js'
+import Icon from './Icon.jsx'
 
 function ControlPanel({
   rawText,
@@ -20,8 +21,11 @@ function ControlPanel({
   onWorkflowModeChange,
   onProcess,
   onUpload,
+  queuedFiles,
+  onRemoveQueuedFile,
   onExport,
   onSecondaryExport,
+  onCrowdStrikeExport,
   onClear,
   exportButtonLabel,
   exportDisabled,
@@ -35,17 +39,34 @@ function ControlPanel({
   crowdStrikeDescription,
   onCrowdStrikeSeverityChange,
   onCrowdStrikeDescriptionChange,
-  onCrowdStrikeExport,
   crowdStrikeExportDisabled,
+  workflowTransitionPhase,
   clearVersion,
+  onRegisterOpenFilePicker,
 }) {
   const uploadRef = useRef(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const isProcessingInputs = processingInFlight || uploadingInFlight
 
+  const openFilePicker = () => {
+    if (backendActionsDisabled) {
+      return
+    }
+
+    uploadRef.current?.click()
+  }
+
   useEffect(() => {
     setIsDragOver(false)
   }, [clearVersion])
+
+  useEffect(() => {
+    onRegisterOpenFilePicker?.(openFilePicker)
+
+    return () => {
+      onRegisterOpenFilePicker?.(null)
+    }
+  }, [onRegisterOpenFilePicker, backendActionsDisabled])
 
   const onFilePicked = async (event) => {
     const files = Array.from(event.target.files || [])
@@ -91,17 +112,102 @@ function ControlPanel({
   return (
     <section className="card control-panel">
       <div className="panel-top">
+        <h2>Workflow</h2>
+        <p className="muted">Select the target workflow first, then provide indicators for analysis.</p>
+      </div>
+
+      <div className="workflow-selector" role="tablist" aria-label="Workflow selector">
+        <button
+          type="button"
+          className={`workflow-badge-button${workflowMode === WORKFLOW_MODE.DEFENDER ? ' active' : ''}`}
+          onClick={() => onWorkflowModeChange(WORKFLOW_MODE.DEFENDER)}
+          disabled={isProcessingInputs}
+        >
+          <Icon name="defender" className="inline-icon" /> Microsoft Defender
+        </button>
+        <button
+          type="button"
+          className={`workflow-badge-button${workflowMode === WORKFLOW_MODE.CROWDSTRIKE ? ' active' : ''}`}
+          onClick={() => onWorkflowModeChange(WORKFLOW_MODE.CROWDSTRIKE)}
+          disabled={isProcessingInputs}
+        >
+          <Icon name="crowdstrike" className="inline-icon" /> CrowdStrike
+        </button>
+      </div>
+
+      <div className="panel-top">
         <h2>IOC Intake</h2>
-        <p className="muted">Paste raw intel text or upload a CSV/TXT/XLSX file. Processing runs through the backend API.</p>
+        <p className="muted">Paste IOC text or drag and drop CSV, XLSX, or TXT files onto the text area.</p>
       </div>
 
       <textarea
-        className="ioc-textarea"
+        className={`ioc-textarea ioc-intake-textarea${isDragOver ? ' ioc-textarea-drag-over' : ''}`}
         value={rawText}
         onChange={(event) => onRawTextChange(event.target.value)}
         placeholder="Paste IOC text here"
         disabled={isProcessingInputs}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
       />
+
+      <div className="intake-file-row">
+        <button type="button" onClick={openFilePicker} disabled={backendActionsDisabled}>
+          <Icon name="upload" className="inline-icon" /> Browse Files
+        </button>
+      </div>
+
+      {queuedFiles.length > 0 && (
+        <div className="file-queue" aria-live="polite">
+          {queuedFiles.map((fileEntry) => (
+            <span className="file-chip" key={fileEntry.id}>
+              <span>{fileEntry.name}</span>
+              <button
+                type="button"
+                className="file-chip-remove"
+                onClick={() => onRemoveQueuedFile(fileEntry.id)}
+                aria-label={`Remove ${fileEntry.name}`}
+                disabled={isProcessingInputs}
+              >
+                x
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {!backendConnected && (
+        <p className="muted">Upload processing is disabled until backend connection is available.</p>
+      )}
+
+      <div className={`workflow-transition-shell workflow-transition-${workflowTransitionPhase}`}>
+        <div className="button-row intake-primary-action sticky-action-bar">
+          <button className="primary" type="button" onClick={onProcess} disabled={backendActionsDisabled}>
+            {processingInFlight ? 'Analyzing...' : 'Analyze IOCs'}
+          </button>
+          {showDefenderControls && (
+            <button type="button" onClick={onExport} disabled={exportDisabled}>
+              <Icon name="export" className="inline-icon" /> {exportInFlight ? 'Generating export...' : exportButtonLabel}
+            </button>
+          )}
+          {!showDefenderControls && (
+            <button type="button" onClick={onCrowdStrikeExport} disabled={crowdStrikeExportDisabled}>
+              <Icon name="export" className="inline-icon" /> Export CrowdStrike CSV
+            </button>
+          )}
+          {!showDefenderControls && (
+            <button type="button" onClick={onSecondaryExport} disabled={secondaryExportDisabled}>
+              <Icon name="qradar" className="inline-icon" /> {secondaryExportButtonLabel}
+            </button>
+          )}
+          <button type="button" className="button-clear" onClick={onClear} disabled={isProcessingInputs}>
+            Clear
+          </button>
+        </div>
+
+        <div className="control-row control-row-column">
+          <label className="field-label analysis-options-label">Analysis Options</label>
+        </div>
 
       {showDefenderControls && (
         <div className="control-row">
@@ -117,28 +223,6 @@ function ControlPanel({
           />
         </div>
       )}
-
-      <div className="control-row control-row-column">
-        <label className="field-label">Workflow</label>
-        <div className="workflow-selector" role="tablist" aria-label="Workflow selector">
-          <button
-            type="button"
-            className={`workflow-badge-button${workflowMode === WORKFLOW_MODE.DEFENDER ? ' active' : ''}`}
-            onClick={() => onWorkflowModeChange(WORKFLOW_MODE.DEFENDER)}
-            disabled={isProcessingInputs}
-          >
-            Microsoft Defender
-          </button>
-          <button
-            type="button"
-            className={`workflow-badge-button${workflowMode === WORKFLOW_MODE.CROWDSTRIKE ? ' active' : ''}`}
-            onClick={() => onWorkflowModeChange(WORKFLOW_MODE.CROWDSTRIKE)}
-            disabled={isProcessingInputs}
-          >
-            CrowdStrike
-          </button>
-        </div>
-      </div>
 
       {showDefenderControls && (
         <div className="control-row">
@@ -206,69 +290,15 @@ function ControlPanel({
         </>
       )}
 
-      <div className="button-row">
-        <button className="primary" type="button" onClick={onProcess} disabled={backendActionsDisabled}>
-          {processingInFlight ? 'Processing...' : (hasAccumulatedResult ? 'Add IOCs' : 'Process IOCs')}
-        </button>
-        <button type="button" onClick={() => uploadRef.current?.click()} disabled={backendActionsDisabled}>
-          {uploadingInFlight ? 'Processing files...' : (hasAccumulatedResult ? 'Add Files to Current Export' : 'Upload CSV/TXT/XLSX Files')}
-        </button>
-        {showDefenderControls && (
-          <button type="button" onClick={onExport} disabled={exportDisabled}>
-            {exportInFlight ? 'Generating export...' : exportButtonLabel}
-          </button>
-        )}
         {!showDefenderControls && (
-          <button type="button" onClick={onCrowdStrikeExport} disabled={crowdStrikeExportDisabled}>
-            Export CrowdStrike CSV
-          </button>
-        )}
-        {!showDefenderControls && (
-          <button type="button" onClick={onSecondaryExport} disabled={secondaryExportDisabled}>
-            {secondaryExportButtonLabel}
-          </button>
-        )}
-        <button type="button" className="button-clear" onClick={onClear} disabled={isProcessingInputs}>
-          Clear
-        </button>
-      </div>
-
-      {!showDefenderControls && (
-        <p className="muted workflow-note">CrowdStrike workflow selected. Defender-specific outputs are hidden.</p>
-      )}
-
-      <div
-        className={`drop-zone${isDragOver ? ' drop-zone-active' : ''}${backendActionsDisabled ? ' drop-zone-disabled' : ''}`}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
-        role="button"
-        tabIndex={0}
-        onClick={() => uploadRef.current?.click()}
-        onKeyDown={(event) => {
-          if (backendActionsDisabled) {
-            return
-          }
-
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault()
-            uploadRef.current?.click()
-          }
-        }}
-        aria-label="Drop CSV, TXT, or XLSX files here, or press Enter to browse"
-      >
-        <p><strong>Drag and drop CSV/TXT/XLSX files here</strong></p>
-        <p className="muted">Supports multi-file drop and uses the same upload processing pipeline.</p>
-        {!backendConnected && (
-          <p className="muted">Upload processing is disabled until backend connection is available.</p>
+          <p className="muted workflow-note">CrowdStrike workflow selected. Defender-specific outputs are hidden.</p>
         )}
       </div>
 
       {uploadSummary && (
         <div className="upload-summary" role="status" aria-live="polite">
-          <p><strong>Files uploaded:</strong> {uploadSummary.filesUploaded}</p>
-          <p><strong>IOCs extracted:</strong> {uploadSummary.iocsExtracted}</p>
           <p><strong>Campaign name detected:</strong> {uploadSummary.detectedCampaignName || 'None'}</p>
+          <p><strong>IOCs extracted:</strong> {uploadSummary.iocsExtracted}</p>
           {uploadSummary.warning && <p className="summary-warning">{uploadSummary.warning}</p>}
         </div>
       )}

@@ -30,9 +30,6 @@ export function buildDetectionSummary(summary) {
     title: 'Detection Summary',
     totalDetected,
     breakdown,
-    meta: [
-      { label: 'Duplicates Removed', value: toCount(summary.duplicatesRemoved) },
-      { label: 'Queries Generated', value: toCount(summary.queriesGenerated) },
-    ],
+    meta: [],
   }
 }

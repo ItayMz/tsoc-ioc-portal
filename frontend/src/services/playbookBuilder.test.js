@@ -39,7 +39,7 @@ test('Microsoft Defender playbook renders required sections and steps', () => {
     generatedOutputs: completedOutputs,
   })
 
-  assert.equal(playbook.title, 'Analyst Playbook')
+  assert.equal(playbook.title, 'Next Investigation Steps')
   assert.deepEqual(
     playbook.sections.map((section) => section.heading),
     ['IOC Sweep', 'Blocking', 'Ticket Handling', 'Customer Communication'],
@@ -72,8 +72,7 @@ test('CrowdStrike / QRadar playbook renders required sections and steps', () => 
 
   const stepTexts = getStepTexts(playbook)
   assert.equal(stepTexts.includes('Run the generated Advanced Event Search query in CrowdStrike.'), true)
-  assert.equal(stepTexts.includes('For IPv4 indicators, perform an additional IOC sweep in QRadar (Log Activity) using the source or destination IP filter.'), true)
-  assert.equal(stepTexts.includes('If sender email addresses were detected, search the sender in QRadar and Forcepoint Mail Relay as part of the investigation.'), true)
+  assert.equal(stepTexts.includes('Perform additional investigation in QRadar Log Activity for IP indicators and in Mail Relay / Forcepoint for sender-email indicators. Refer to the Detected Indicators section for values.'), true)
   assert.equal(stepTexts.includes('Import the generated CrowdStrike blocking CSV.'), true)
   assert.equal(stepTexts.includes('Import the generated QRadar IPv4 CSV into the appropriate QRadar Reference Set.'), true)
   assert.equal(stepTexts.includes('If customer-side blocking is required (for example URLs, Domains, Mail Relay actions, or Proxy blocking), include those indicators in the reply to the customer.'), true)
@@ -128,7 +127,7 @@ test('workflow switching updates sender-email playbook wording between Defender 
   const crowdStrikeStepTexts = getStepTexts(crowdStrikePlaybook)
 
   assert.equal(defenderStepTexts.some((text) => text.includes('Forcepoint Mail Relay')), false)
-  assert.equal(crowdStrikeStepTexts.includes('If sender email addresses were detected, search the sender in QRadar and Forcepoint Mail Relay as part of the investigation.'), true)
+  assert.equal(crowdStrikeStepTexts.includes('Investigate detected sender-email indicators in the Mail Relay / Forcepoint environment according to the SOC playbook. Refer to the Detected Indicators section for values.'), true)
 })
 
 test('QRadar IOC sweep step is shown only when IPv4 indicators exist', () => {
@@ -143,8 +142,8 @@ test('QRadar IOC sweep step is shown only when IPv4 indicators exist', () => {
     generatedOutputs: completedOutputs,
   })
 
-  assert.equal(getStepTexts(withIpv4).includes('For IPv4 indicators, perform an additional IOC sweep in QRadar (Log Activity) using the source or destination IP filter.'), true)
-  assert.equal(getStepTexts(withoutIpv4).includes('For IPv4 indicators, perform an additional IOC sweep in QRadar (Log Activity) using the source or destination IP filter.'), false)
+  assert.equal(getStepTexts(withIpv4).includes('Perform an additional QRadar Log Activity investigation for detected IP indicators according to the SOC playbook. Refer to the Detected Indicators section for values.'), true)
+  assert.equal(getStepTexts(withoutIpv4).includes('Perform an additional QRadar Log Activity investigation for detected IP indicators according to the SOC playbook. Refer to the Detected Indicators section for values.'), false)
 })
 
 test('QRadar import step is shown only when IPv4 indicators exist', () => {

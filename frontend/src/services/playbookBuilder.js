@@ -50,7 +50,7 @@ export function shouldShowAnalystPlaybook(indicators) {
 export function buildAnalystPlaybook({ workflowMode, indicators, generatedOutputs = {} }) {
   if (!shouldShowAnalystPlaybook(indicators)) {
     return {
-      title: 'Analyst Playbook',
+      title: 'Next Investigation Steps',
       sections: [],
     }
   }
@@ -60,6 +60,13 @@ export function buildAnalystPlaybook({ workflowMode, indicators, generatedOutput
   const hasSenderEmail = hasAnyType(indicators, ['senderemailaddress', 'sender_email_address', 'senderemail', 'email'])
   const hasIpv4 = hasAnyType(indicators, ['ipv4', 'ipaddress', 'ip'])
   const hasCustomerSideBlocking = hasAnyType(indicators, ['url', 'urls', 'domain', 'domains', 'domainname', 'senderemailaddress', 'sender_email_address', 'senderemail', 'email'])
+  const crowdStrikeInvestigationGuidance = hasIpv4 && hasSenderEmail
+    ? 'Perform additional investigation in QRadar Log Activity for IP indicators and in Mail Relay / Forcepoint for sender-email indicators. Refer to the Detected Indicators section for values.'
+    : hasIpv4
+      ? 'Perform an additional QRadar Log Activity investigation for detected IP indicators according to the SOC playbook. Refer to the Detected Indicators section for values.'
+      : hasSenderEmail
+        ? 'Investigate detected sender-email indicators in the Mail Relay / Forcepoint environment according to the SOC playbook. Refer to the Detected Indicators section for values.'
+        : null
 
   const sections = isDefender
     ? [
@@ -107,15 +114,11 @@ export function buildAnalystPlaybook({ workflowMode, indicators, generatedOutput
             text: 'Run the generated Advanced Event Search query in CrowdStrike.',
           },
           {
-            text: 'For IPv4 indicators, perform an additional IOC sweep in QRadar (Log Activity) using the source or destination IP filter.',
-            visible: hasIpv4,
+            text: crowdStrikeInvestigationGuidance,
+            visible: Boolean(crowdStrikeInvestigationGuidance),
           },
           {
             text: 'Investigate any matching results.',
-          },
-          {
-            text: 'If sender email addresses were detected, search the sender in QRadar and Forcepoint Mail Relay as part of the investigation.',
-            visible: hasSenderEmail,
           },
         ],
       },
@@ -154,7 +157,7 @@ export function buildAnalystPlaybook({ workflowMode, indicators, generatedOutput
     ]
 
   return {
-    title: 'Analyst Playbook',
+    title: 'Next Investigation Steps',
     sections: buildSequentialSections(sections),
   }
 }

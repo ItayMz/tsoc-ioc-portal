@@ -110,15 +110,15 @@ test('default display mode uses refanged values and switching to original update
   )
 })
 
-test('accordion defaults to Domains expanded and non-domain groups collapsed', () => {
+test('accordion defaults to all groups collapsed', () => {
   const groups = [
     { label: 'MD5', items: [{ original_value: 'a', refanged_value: 'a' }] },
-    { label: DEFAULT_EXPANDED_GROUP_LABEL, items: [{ original_value: 'd', refanged_value: 'd' }] },
+    { label: 'Domains', items: [{ original_value: 'd', refanged_value: 'd' }] },
   ]
 
   const expanded = getInitialExpandedGroups(groups)
   assert.equal(expanded.MD5, false)
-  assert.equal(expanded[DEFAULT_EXPANDED_GROUP_LABEL], true)
+  assert.equal(expanded.Domains, false)
 })
 
 test('accordion expand and collapse toggles only targeted group', () => {

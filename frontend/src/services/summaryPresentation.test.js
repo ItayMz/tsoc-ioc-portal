@@ -27,10 +27,7 @@ test('buildDetectionSummary returns detection-focused stats only', () => {
     result.breakdown.map((item) => item.label),
     ['MD5', 'SHA1', 'SHA256', 'IPv4', 'IPv6', 'Domains', 'URLs', 'Sender Email Addresses'],
   )
-  assert.equal(result.meta[0].label, 'Duplicates Removed')
-  assert.equal(result.meta[0].value, 18)
-  assert.equal(result.meta[1].label, 'Queries Generated')
-  assert.equal(result.meta[1].value, 7)
+  assert.deepEqual(result.meta, [])
 })
 
 test('buildDetectionSummary normalizes missing values to zero', () => {
@@ -46,8 +43,7 @@ test('buildDetectionSummary normalizes missing values to zero', () => {
   })
 
   assert.equal(result.totalDetected, 0)
-  assert.equal(result.meta[0].value, 0)
-  assert.equal(result.meta[1].value, 0)
+  assert.deepEqual(result.meta, [])
   assert.equal(result.breakdown.every((item) => item.isMuted), true)
 })
 

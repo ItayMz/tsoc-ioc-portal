@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import Icon from './Icon.jsx'
 
 const COPY_RESET_MS = 1800
 
@@ -37,16 +38,12 @@ function CrowdStrikeQueryCard({ queryData, onCopySuccess }) {
         <div className="kql-copy-actions">
           {copied && <span className="kql-copy-confirmation">Copied!</span>}
           <button type="button" onClick={copyQuery}>
-            {copied ? 'Copied ✓' : 'Copy Query'}
+            <Icon name="copy" className="inline-icon" /> {copied ? 'Copied ✓' : 'Copy Query'}
           </button>
         </div>
       </div>
       <p className="muted">Search all detected indicators in CrowdStrike Advanced Event Search.</p>
-      <div className="meta-row">
-        <span className="chip">IOC count: {queryData.totalUniqueIocCount}</span>
-        <span className="chip">IOC types: {queryData.uniqueTypeCount}</span>
-      </div>
-      <pre className="query-block">{queryData.query}</pre>
+      <pre className="query-block query-block-single-line">{queryData.query}</pre>
     </article>
   )
 }

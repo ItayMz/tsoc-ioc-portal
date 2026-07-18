@@ -4,7 +4,7 @@ export const INDICATOR_DISPLAY_MODE = {
   REFANGED: 'refanged',
   ORIGINAL: 'original',
 }
-export const DEFAULT_EXPANDED_GROUP_LABEL = 'Domains'
+export const DEFAULT_EXPANDED_GROUP_LABEL = null
 
 const GROUP_DEFINITIONS = [
   { label: 'MD5', types: ['filemd5', 'md5'] },
@@ -67,7 +67,7 @@ export function getInitialExpandedGroups(groups) {
   const expandedGroups = {}
 
   for (const group of groups || []) {
-    expandedGroups[group.label] = group.label === DEFAULT_EXPANDED_GROUP_LABEL
+    expandedGroups[group.label] = false
   }
 
   return expandedGroups
@@ -82,7 +82,7 @@ export function syncExpandedGroups(currentExpandedGroups, groups) {
       continue
     }
 
-    synced[group.label] = group.label === DEFAULT_EXPANDED_GROUP_LABEL
+    synced[group.label] = false
   }
 
   return synced
