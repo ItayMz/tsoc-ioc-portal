@@ -9,6 +9,7 @@ const additionalInvestigationCardPath = resolve(process.cwd(), 'src/components/A
 const crowdStrikeQueryCardPath = resolve(process.cwd(), 'src/components/CrowdStrikeQueryCard.jsx')
 const crowdStrikeResultsPath = resolve(process.cwd(), 'src/components/CrowdStrikeResults.jsx')
 const controlPanelPath = resolve(process.cwd(), 'src/components/ControlPanel.jsx')
+const themedSelectPath = resolve(process.cwd(), 'src/components/ThemedSelect.jsx')
 const floatingExportBarPath = resolve(process.cwd(), 'src/components/FloatingExportBar.jsx')
 const loadingSpinnerPath = resolve(process.cwd(), 'src/components/LoadingSpinner.jsx')
 const exportSuccessBannerPath = resolve(process.cwd(), 'src/components/ExportSuccessBanner.jsx')
@@ -74,12 +75,12 @@ test('workflow selector uses badge buttons for Microsoft Defender and CrowdStrik
   assert.equal(source.includes('workflowModeSelect'), false)
 })
 
-test('Control panel places Analyze IOCs action in the intake section', () => {
+test('Control panel places Process IOCs action in the intake section', () => {
   const source = readFileSync(controlPanelPath, 'utf8')
 
   assert.equal(source.includes('className="button-row intake-primary-action"'), true)
   assert.equal(source.includes('sticky-action-bar'), false)
-  assert.equal(source.includes("{processingInFlight ? 'Analyzing...' : 'Analyze IOCs'}"), true)
+  assert.equal(source.includes("{processingInFlight ? 'Processing...' : 'Process IOCs'}"), true)
   assert.equal(source.includes('onClick={onProcess}'), true)
   assert.equal(source.includes('onClick={onExport}'), true)
   assert.equal(source.includes('onClick={onCrowdStrikeExport}'), true)
@@ -112,6 +113,34 @@ test('Control panel renders CrowdStrike severity and description configuration',
   assert.equal(source.includes('id="crowdstrikeDescription"'), true)
   assert.equal(source.includes('onCrowdStrikeSeverityChange'), true)
   assert.equal(source.includes('onCrowdStrikeDescriptionChange'), true)
+  assert.equal(source.includes('onValueChange={onCrowdStrikeSeverityChange}'), true)
+})
+
+test('Themed select uses Radix portal and forced downward popper placement', () => {
+  const source = readFileSync(themedSelectPath, 'utf8')
+
+  assert.equal(source.includes('<Select.Portal>'), true)
+  assert.equal(source.includes('<Select.Content'), true)
+  assert.equal(source.includes('position="popper"'), true)
+  assert.equal(source.includes('side="bottom"'), true)
+  assert.equal(source.includes('align="start"'), true)
+  assert.equal(source.includes('avoidCollisions={false}'), true)
+  assert.equal(source.includes('sideOffset={6}'), true)
+  assert.equal(source.includes('Select.ItemIndicator'), true)
+})
+
+test('Control panel keeps canonical default category values while using explicit display-label options', () => {
+  const source = readFileSync(controlPanelPath, 'utf8')
+
+  assert.equal(source.includes('options={DEFENDER_CATEGORY_OPTIONS}'), true)
+  assert.equal(source.includes('onValueChange={onDefaultCategoryChange}'), true)
+})
+
+test('Control panel uses value-preserving lookback and severity select handlers', () => {
+  const source = readFileSync(controlPanelPath, 'utf8')
+
+  assert.equal(source.includes('onValueChange={(nextValue) => onLookbackChange(Number(nextValue))}'), true)
+  assert.equal(source.includes('onValueChange={onCrowdStrikeSeverityChange}'), true)
 })
 
 test('App does not render a standalone Export Actions section', () => {
@@ -458,7 +487,7 @@ test('Control panel only disables controls related to processing and upload oper
   assert.equal(source.includes('const isProcessingInputs = processingInFlight || uploadingInFlight'), true)
   assert.equal(source.includes('disabled={isProcessingInputs}'), true)
   assert.equal(source.includes('disabled={backendActionsDisabled}'), true)
-  assert.equal(source.includes("{processingInFlight ? 'Analyzing...' : 'Analyze IOCs'}"), true)
+  assert.equal(source.includes("{processingInFlight ? 'Processing...' : 'Process IOCs'}"), true)
   assert.equal(source.includes('Paste IOC text or drag and drop CSV, XLSX, or TXT files onto the text area.'), true)
   assert.equal(source.includes('Drag and drop CSV, XLSX, or TXT files directly onto the IOC text area.'), false)
   assert.equal(source.includes('Total uploaded size:'), false)

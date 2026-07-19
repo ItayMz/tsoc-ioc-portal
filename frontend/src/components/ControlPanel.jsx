@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { DEFENDER_CATEGORIES } from '../services/defenderCategories.js'
+import { DEFENDER_CATEGORY_OPTIONS } from '../services/defenderCategories.js'
 import { WORKFLOW_MODE } from '../services/workflowMode.js'
 import Icon from './Icon.jsx'
+import ThemedSelect from './ThemedSelect.jsx'
 
 function ControlPanel({
   rawText,
@@ -153,7 +154,7 @@ function ControlPanel({
       />
 
       <div className="intake-file-row">
-        <button type="button" onClick={openFilePicker} disabled={backendActionsDisabled}>
+        <button type="button" className="intake-main-action-button" onClick={openFilePicker} disabled={backendActionsDisabled}>
           <Icon name="upload" className="inline-icon" /> Browse Files
         </button>
       </div>
@@ -183,8 +184,8 @@ function ControlPanel({
 
       <div className={`workflow-transition-shell workflow-transition-${workflowTransitionPhase}`}>
         <div className="button-row intake-primary-action">
-          <button className="primary" type="button" onClick={onProcess} disabled={backendActionsDisabled}>
-            {processingInFlight ? 'Analyzing...' : 'Analyze IOCs'}
+          <button className="primary intake-main-action-button" type="button" onClick={onProcess} disabled={backendActionsDisabled}>
+            {processingInFlight ? 'Processing...' : 'Process IOCs'}
           </button>
           {showDefenderControls && (
             <button type="button" onClick={onExport} disabled={exportDisabled}>
@@ -227,37 +228,35 @@ function ControlPanel({
 
       {showDefenderControls && (
         <div className="control-row analysis-option-row">
-        <label className="field-label" htmlFor="lookbackSelect">Lookback</label>
-        <select
-          id="lookbackSelect"
-          className="lookback-select"
-          value={lookbackDays}
-          onChange={(event) => onLookbackChange(Number(event.target.value))}
-          disabled={isProcessingInputs || lookbackRefreshing}
-        >
-          <option value={7}>Last 7 days</option>
-          <option value={30}>Last 30 days</option>
-          <option value={90}>Last 90 days</option>
-          <option value={180}>Last 180 days</option>
-          <option value={365}>Last 365 days</option>
-        </select>
+          <label className="field-label" htmlFor="lookbackSelect">Lookback</label>
+          <ThemedSelect
+            id="lookbackSelect"
+            label="Lookback"
+            value={lookbackDays}
+            onValueChange={(nextValue) => onLookbackChange(Number(nextValue))}
+            disabled={isProcessingInputs || lookbackRefreshing}
+            options={[
+              { value: 7, label: 'Last 7 days' },
+              { value: 30, label: 'Last 30 days' },
+              { value: 90, label: 'Last 90 days' },
+              { value: 180, label: 'Last 180 days' },
+              { value: 365, label: 'Last 365 days' },
+            ]}
+          />
         </div>
       )}
 
       {showDefenderControls && (
         <div className="control-row analysis-option-row">
           <label className="field-label" htmlFor="defaultCategorySelect">Default Category</label>
-          <select
+          <ThemedSelect
             id="defaultCategorySelect"
-            className="lookback-select"
+            label="Default Category"
             value={defaultCategory}
-            onChange={(event) => onDefaultCategoryChange(event.target.value)}
+            onValueChange={onDefaultCategoryChange}
             disabled={isProcessingInputs}
-          >
-            {DEFENDER_CATEGORIES.map((category) => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
+            options={DEFENDER_CATEGORY_OPTIONS}
+          />
         </div>
       )}
 
@@ -265,16 +264,17 @@ function ControlPanel({
         <>
           <div className="control-row">
             <label className="field-label" htmlFor="crowdstrikeSeverity">Severity</label>
-            <select
+            <ThemedSelect
               id="crowdstrikeSeverity"
-              className="lookback-select"
+              label="Severity"
               value={crowdStrikeSeverity}
-              onChange={(event) => onCrowdStrikeSeverityChange(event.target.value)}
+              onValueChange={onCrowdStrikeSeverityChange}
               disabled={isProcessingInputs}
-            >
-              <option value="high">high</option>
-              <option value="medium">medium</option>
-            </select>
+              options={[
+                { value: 'high', label: 'high' },
+                { value: 'medium', label: 'medium' },
+              ]}
+            />
           </div>
 
           <div className="control-row control-row-column">

@@ -4,6 +4,8 @@ import test from 'node:test'
 import {
   DEFAULT_DEFENDER_CATEGORY,
   DEFENDER_CATEGORIES,
+  DEFENDER_CATEGORY_OPTIONS,
+  getDefenderCategoryLabel,
   normalizeDefaultCategory,
 } from './defenderCategories.js'
 
@@ -23,4 +25,20 @@ test('normalizeDefaultCategory falls back to Malware when value is missing', () 
 
 test('normalizeDefaultCategory falls back to Malware when value is invalid', () => {
   assert.equal(normalizeDefaultCategory('TotallyInvalidCategory'), 'Malware')
+})
+
+test('defender category options expose friendly labels while preserving canonical values', () => {
+  const credentialOption = DEFENDER_CATEGORY_OPTIONS.find((option) => option.value === 'CredentialAccess')
+  const commandOption = DEFENDER_CATEGORY_OPTIONS.find((option) => option.value === 'CommandAndControl')
+
+  assert.deepEqual(credentialOption, { value: 'CredentialAccess', label: 'Credential Access' })
+  assert.deepEqual(commandOption, { value: 'CommandAndControl', label: 'Command and Control' })
+  assert.notEqual(credentialOption.label, credentialOption.value)
+  assert.notEqual(commandOption.label, commandOption.value)
+})
+
+test('getDefenderCategoryLabel returns explicit display labels without changing values', () => {
+  assert.equal(getDefenderCategoryLabel('PrivilegeEscalation'), 'Privilege Escalation')
+  assert.equal(getDefenderCategoryLabel('SuspiciousActivity'), 'Suspicious Activity')
+  assert.equal(getDefenderCategoryLabel('Malware'), 'Malware')
 })
