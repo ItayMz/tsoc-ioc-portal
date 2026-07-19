@@ -65,6 +65,18 @@ const EXPORT_BANNER_FADE_MS = 220
 const WORKFLOW_TRANSITION_MS = 210
 const TOTAL_UPLOAD_SIZE_LIMIT_BYTES = 25 * 1024 * 1024
 
+function hasFilesInDataTransfer(dataTransfer) {
+  if (!dataTransfer) {
+    return false
+  }
+
+  if (dataTransfer.files && dataTransfer.files.length > 0) {
+    return true
+  }
+
+  return Array.from(dataTransfer.types || []).includes('Files')
+}
+
 function getValidDetectedCount(parseData) {
   if (typeof parseData?.valid_count === 'number') {
     return parseData.valid_count
@@ -110,6 +122,7 @@ function App() {
   const [displayedWorkflowMode, setDisplayedWorkflowMode] = useState(WORKFLOW_MODE.DEFENDER)
   const [workflowTransitionPhase, setWorkflowTransitionPhase] = useState('in')
   const [aboutOpen, setAboutOpen] = useState(false)
+  const [isGlobalFileDragActive, setIsGlobalFileDragActive] = useState(false)
   const isMountedRef = useRef(true)
   const connectedHideTimerRef = useRef(null)
   const lookbackRefreshInFlightRef = useRef(false)
@@ -118,6 +131,7 @@ function App() {
   const exportBannerFadeTimerRef = useRef(null)
   const workflowTransitionTimerRef = useRef(null)
   const openFilePickerRef = useRef(null)
+  const globalFileDragDepthRef = useRef(0)
 
   const isProcessing = activeLoadingAction === 'processing'
   const isUploading = activeLoadingAction === 'uploading'
@@ -683,6 +697,88 @@ function App() {
     }
   }, [aboutOpen, backendConnectionState, rawText, lookbackDays, campaignName, defaultCategory, iocMetadata, lastSuccessfulParsePayload, lastSuccessfulParseResult, parseResult, workflowMode, crowdStrikeSeverity, crowdStrikeDescription])
 
+  useEffect(() => {
+    const resetGlobalFileDrag = () => {
+      globalFileDragDepthRef.current = 0
+      setIsGlobalFileDragActive(false)
+    }
+
+    const handleWindowDragEnter = (event) => {
+      if (!hasFilesInDataTransfer(event.dataTransfer)) {
+        return
+      }
+
+      event.preventDefault()
+      globalFileDragDepthRef.current += 1
+      setIsGlobalFileDragActive(true)
+    }
+
+    const handleWindowDragOver = (event) => {
+      if (!hasFilesInDataTransfer(event.dataTransfer)) {
+        return
+      }
+
+      event.preventDefault()
+      event.dataTransfer.dropEffect = 'copy'
+
+      if (!isGlobalFileDragActive) {
+        setIsGlobalFileDragActive(true)
+      }
+    }
+
+    const handleWindowDragLeave = (event) => {
+      if (!hasFilesInDataTransfer(event.dataTransfer)) {
+        return
+      }
+
+      event.preventDefault()
+      globalFileDragDepthRef.current = Math.max(0, globalFileDragDepthRef.current - 1)
+
+      const leftWindow = event.clientX <= 0
+        || event.clientY <= 0
+        || event.clientX >= window.innerWidth
+        || event.clientY >= window.innerHeight
+
+      if (globalFileDragDepthRef.current === 0 || leftWindow) {
+        resetGlobalFileDrag()
+      }
+    }
+
+    const handleWindowDrop = async (event) => {
+      if (!hasFilesInDataTransfer(event.dataTransfer)) {
+        return
+      }
+
+      event.preventDefault()
+      event.stopPropagation()
+      const files = Array.from(event.dataTransfer?.files || [])
+
+      resetGlobalFileDrag()
+
+      if (files.length) {
+        await handleUpload(files)
+      }
+    }
+
+    const handleWindowBlur = () => {
+      resetGlobalFileDrag()
+    }
+
+    window.addEventListener('dragenter', handleWindowDragEnter, true)
+    window.addEventListener('dragover', handleWindowDragOver, true)
+    window.addEventListener('dragleave', handleWindowDragLeave, true)
+    window.addEventListener('drop', handleWindowDrop, true)
+    window.addEventListener('blur', handleWindowBlur)
+
+    return () => {
+      window.removeEventListener('dragenter', handleWindowDragEnter, true)
+      window.removeEventListener('dragover', handleWindowDragOver, true)
+      window.removeEventListener('dragleave', handleWindowDragLeave, true)
+      window.removeEventListener('drop', handleWindowDrop, true)
+      window.removeEventListener('blur', handleWindowBlur)
+    }
+  }, [handleUpload, isGlobalFileDragActive])
+
   return (
     <div className="app-shell">
       <header className="top-header card">
@@ -808,6 +904,15 @@ function App() {
       <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
 
       <ToastMessage toast={toast} />
+
+      {isGlobalFileDragActive && (
+        <div className="global-file-drop-overlay" aria-hidden="true">
+          <section className="global-file-drop-panel">
+            <p className="global-file-drop-title">DROP FILES ANYWHERE</p>
+            <p className="global-file-drop-subtitle">Drop files to add them to the current analysis</p>
+          </section>
+        </div>
+      )}
     </div>
   )
 }

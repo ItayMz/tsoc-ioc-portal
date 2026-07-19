@@ -132,6 +132,45 @@ test('App shows Detected Indicators as a shared workflow-independent section onl
   assert.equal(source.includes('{workflowPresentation.isDefender && <IndicatorResults indicators={parseResult.indicators} />}'), false)
 })
 
+test('App supports global file drag-and-drop overlay with drag counter and file-only filtering', () => {
+  const source = readFileSync(appPath, 'utf8')
+
+  assert.equal(source.includes('function hasFilesInDataTransfer(dataTransfer)'), true)
+  assert.equal(source.includes("Array.from(dataTransfer.types || []).includes('Files')"), true)
+  assert.equal(source.includes('const [isGlobalFileDragActive, setIsGlobalFileDragActive] = useState(false)'), true)
+  assert.equal(source.includes('const globalFileDragDepthRef = useRef(0)'), true)
+  assert.equal(source.includes('globalFileDragDepthRef.current += 1'), true)
+  assert.equal(source.includes('globalFileDragDepthRef.current = Math.max(0, globalFileDragDepthRef.current - 1)'), true)
+  assert.equal(source.includes("window.addEventListener('dragenter', handleWindowDragEnter, true)"), true)
+  assert.equal(source.includes("window.addEventListener('dragover', handleWindowDragOver, true)"), true)
+  assert.equal(source.includes("window.addEventListener('dragleave', handleWindowDragLeave, true)"), true)
+  assert.equal(source.includes("window.addEventListener('drop', handleWindowDrop, true)"), true)
+  assert.equal(source.includes('event.preventDefault()'), true)
+  assert.equal(source.includes('await handleUpload(files)'), true)
+  assert.equal(source.includes('className="global-file-drop-overlay"'), true)
+  assert.equal(source.includes('DROP FILES ANYWHERE'), true)
+})
+
+test('Global drop overlay styles are full-page, dark, and readable with reduced-motion support', () => {
+  const cssSource = readFileSync(appStylesPath, 'utf8')
+
+  assert.equal(cssSource.includes('.global-file-drop-overlay {'), true)
+  assert.equal(cssSource.includes('position: fixed;'), true)
+  assert.equal(cssSource.includes('inset: 0;'), true)
+  assert.equal(cssSource.includes('backdrop-filter: blur(5px);'), true)
+  assert.equal(cssSource.includes('animation: global-drop-overlay-in 140ms ease-out;'), true)
+  assert.equal(cssSource.includes('.global-file-drop-panel {'), true)
+  assert.equal(cssSource.includes('border: 1px solid rgba(96, 165, 250, 0.62);'), false)
+  assert.equal(cssSource.includes('background: linear-gradient(160deg, rgba(10, 20, 38, 0.92) 0%, rgba(8, 17, 31, 0.9) 100%);'), false)
+  assert.equal(cssSource.includes('box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.26), 0 14px 34px rgba(2, 6, 18, 0.62);'), false)
+  assert.equal(cssSource.includes('.global-file-drop-title {'), true)
+  assert.equal(cssSource.includes('font-weight: 700;'), true)
+  assert.equal(cssSource.includes('text-transform: uppercase;'), true)
+  assert.equal(cssSource.includes('@media (prefers-reduced-motion: reduce)'), true)
+  assert.equal(cssSource.includes('.global-file-drop-overlay {'), true)
+  assert.equal(cssSource.includes('animation: none;'), true)
+})
+
 test('Detected Indicators render order stays between Detection Summary and workflow-specific outputs for both workflows', () => {
   const source = readFileSync(appPath, 'utf8')
 
