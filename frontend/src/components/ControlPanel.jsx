@@ -205,12 +205,12 @@ function ControlPanel({
           </button>
         </div>
 
-        <div className="control-row control-row-column">
+        <div className="control-row control-row-column analysis-options-heading-row">
           <label className="field-label analysis-options-label">Analysis Options</label>
         </div>
 
       {showDefenderControls && (
-        <div className="control-row">
+        <div className="control-row analysis-option-row">
           <label className="field-label" htmlFor="campaignNameInput">Campaign name</label>
           <input
             id="campaignNameInput"
@@ -225,7 +225,7 @@ function ControlPanel({
       )}
 
       {showDefenderControls && (
-        <div className="control-row">
+        <div className="control-row analysis-option-row">
         <label className="field-label" htmlFor="lookbackSelect">Lookback</label>
         <select
           id="lookbackSelect"
@@ -244,7 +244,7 @@ function ControlPanel({
       )}
 
       {showDefenderControls && (
-        <div className="control-row">
+        <div className="control-row analysis-option-row">
           <label className="field-label" htmlFor="defaultCategorySelect">Default Category</label>
           <select
             id="defaultCategorySelect"

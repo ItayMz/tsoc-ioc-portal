@@ -449,7 +449,24 @@ button:disabled {
 }
 
 .analysis-options-label {
-  margin-top: 0.55rem;
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 650;
+  color: #dbeafe;
+  line-height: 1.2;
+}
+
+.analysis-options-heading-row {
+  margin-top: 0.85rem;
+  margin-bottom: 0.8rem;
+}
+
+.analysis-option-row {
+  gap: 0.5rem;
+}
+
+.analysis-option-row + .analysis-option-row {
+  margin-top: 1rem;
 }
 
 .crowdstrike-description {
